@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link href="/css/reset.css" rel="stylesheet" />
+    <link href="/css/common.css" rel="stylesheet" />
+    <link href="/css/editor.css" rel="stylesheet" />
+    <link href="/css/editor-html.css" rel="stylesheet" />
+
+    <style>
+        .editor li[data-type="line"] > div {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div id="modals"></div>
+    
+    <ul class="editor" id="editor" contenteditable="true" spellcheck="false">
+    </ul>
+
+
+    <script>
+        
+        class Line {
+            constructor(line, anchor){
+                this.line = line;
+                this.anchor = anchor
+
+            }
+
+            replaceWith(...nodes) {
+                this.line.replaceWith(...nodes)
+            }
+
+            get textContent(){
+                return this.line.textContent.trim()
+            }
+
+            get previousLine(){
+                return this.line.previousElementSibling
+            }
+
+            get nextLine(){
+                return this.line.nextElementSibling
+            }
+
+            getAbsoluteCaretPosition(relativePosition){
+                console.log("relativePosition:", relativePosition)
+                const walker = document.createTreeWalker(this.line, NodeFilter.SHOW_TEXT);
+                let absolutePosition = relativePosition;
+
+                while(walker.nextNode()) {
+                    const currentNode = walker.currentNode;
+
+                    if(currentNode === this.anchor){
+                        console.log("BREAK")
+                        break;
+                    }
+                    console.log("ADD")
+                    const textNode = currentNode.textContent.trim()
+                    absolutePosition += textNode.length
+                }
+
+                console.log("ABS POS:", absolutePosition)
+
+                return absolutePosition
+            }
+
+            refresh(){
+                const parsedLine = HTMLParser.parse(this.textContent)
+                this.line.replaceWith(parsedLine[0])
+                console.log("this.line:", this.line)
+
+                return parsedLine
+            }
+
+            static create(plaintext){
+                const wrapper = document.createElement("li")
+                wrapper.setAttribute("data-type", "line")
+                wrapper.innerHTML = plaintext
+
+                return wrapper
+            }
+
+            split(anchorNode, position){
+                const walker = document.createTreeWalker(this.line, NodeFilter.SHOW_TEXT);
+
+                let currentSide = "left";
+                let split = {
+                    left: "",
+                    right: ""
+                }
+                while(walker.nextNode()) {
+                    const currentNode = walker.currentNode;
+
+                    if(walker.currentNode === anchorNode){
+                        // Split anchorNode at position
+                        const leftTextContent = currentNode.textContent.substring(0, position)
+                        const rightTextContent = currentNode.textContent.substring(position)
+
+                        split.left += leftTextContent;
+                        split.right = rightTextContent;
+
+                        // Register following nodes as right of caret
+                        currentSide = "right";
+                    } else {
+                        // Capture textContent of currentNode
+                        split[currentSide] += currentNode.textContent
+                    }
+                }
+
+                return split
+
+            }
+
+        }
+
+        class HTMLParser {
+            constructor(){
+
+            }
+
+            static createWrapper(plaintext, className, tag = "div") {
+                const wrapper = document.createElement(tag)
+                wrapper.setAttribute("data-type", "wrapper")
+
+                const innerWrapper = document.createElement("div")
+                innerWrapper.setAttribute("data-type", className)
+
+                const textNode = document.createTextNode(plaintext)
+
+                innerWrapper.append(textNode)
+                wrapper.append(innerWrapper)
+
+                return wrapper
+            }
+
+            static parse(plaintext){
+                const tagRe = /(?<openingTag><)(?<tagName>[a-zA-Z0-9-]+){0,1}(?<attributes>[a-zA-Z0-9-= "\n]*)(?<closingTag>>{0,1})/g;
+                
+                // Add placeholders for line breaks
+                let parsedDoc = plaintext.replace(/\n/g, "{{LINEBREAK}}")
+                
+                // Parse Tags
+                parsedDoc = parsedDoc.replace(tagRe, (match, _openingTag, _tagName, _attributes, _closingTag) => {
+                    let parsedMatch = "";
+
+                    const openingTag = (_openingTag) ? _openingTag.trim() : null;
+                    const tagName = (_tagName) ? _tagName.trim() : null;
+                    const attributes = (_attributes) ? _attributes.trim() : null;
+                    const closingTag = (_closingTag) ? _closingTag.trim() : null;
+
+                    if(openingTag){
+                        parsedMatch += this.createWrapper("<", "opening-angle-bracket").outerHTML
+                    }
+
+                    if(tagName){
+                        parsedMatch += this.createWrapper(tagName, "tagname").outerHTML
+                    }
+
+                    if(attributes){
+                        parsedMatch += "NEED TO PARSE ATTRIBUTES"
+                    }
+
+                    if(closingTag){
+                        parsedMatch += this.createWrapper(">", "closing-angle-bracket").outerHTML
+                    }
+
+                    return parsedMatch
+                    
+                })
+
+
+                const parsedLines = parsedDoc.split("{{LINEBREAK}}")
+
+                const lines = parsedLines.map((parsedLine) => {
+                    return Line.create(parsedLine)
+                })
+
+                return lines
+            }
+        }
+
+        
+        class Document {
+            constructor(doc){
+                this.selection = new Selection();
+                this.lines = HTMLParser.parse(doc)
+            }
+
+            get length(){
+                return this.lines.length
+            }
+
+            line(index){
+                return this.lines[index]
+            }
+
+            
+
+            set(index, value){
+                this.lines[index] = value
+            }
+
+            push(line) {
+                console.log("push", line)
+                this.lines.push(line)
+            }
+
+            forEach(callback){
+                this.lines.forEach(callback)
+            }
+
+            
+
+            
+
+            simpleInsert(plaintext){
+                const anchorNode = this.selection.anchorNode;
+                const type = anchorNode.parentNode.getAttribute("data-type");
+
+                console.log("anchorNode:", anchorNode)
+                console.log("type:", type)
+
+                switch(type){
+                    case "line":
+                    case "tagname":
+                    case "attrname":
+                    case "attrvalue":
+                        console.log("Simple Insert")
+                        const leftText = anchorNode.textContent.substring(0, this.selection.caretPosition)
+                        const rightText = anchorNode.textContent.substring(this.selection.caretPosition)
+                        
+                        anchorNode.textContent = `${leftText}${plaintext}${rightText}`
+                        console.log("left", leftText)
+                        console.log("right", rightText)
+                        break;
+                    case "opening-angle-bracket":
+                        console.log("Tricker, its an opening bracket");
+                        break
+                    case "closing-angle-bracket":
+                        console.log("Tricker, its a closing bracket");
+                        break;
+                }
+
+            }
+
+            /*
+            one
+            two
+            three
+            */
+
+            splitLine(){}
+
+            insertText(plaintext){
+                const lines = plaintext.split("\n");
+                const anchorNode = this.selection.anchorNode;
+                const type = anchorNode.parentNode.getAttribute("data-type");
+
+                console.log("lines", lines)
+
+                if(this.selection.isCollapsed){
+                    // Simple Insert into current Anchor node
+                    //this.simpleInsert(plaintext);
+
+                } else {}
+            }
+            
+        }
+
+        class Clipboard {
+            constructor(){
+                this.storage = []
+            }
+
+            push(data){
+                this.storage.push(data)
+            }
+        }
+
+        class Selection {
+            constructor(){
+                this.selection = window.getSelection();
+                
+            }
+
+            setAbsolutePosition(node, absolutePosition = 1){
+                console.log("Looking for absolutePosition:", absolutePosition)
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                this.selection.removeAllRanges();
+                this.selection.addRange(range);
+
+                const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+                let currentPosition = 0;
+
+                while(walker.nextNode()) {
+                    const currentNode = walker.currentNode;
+                    const textNode = currentNode.textContent.trim()
+                    if(absolutePosition - textNode.length < 0) {
+                        console.log("ITS IN THIS NODE", currentNode, absolutePosition)
+                        break
+                    }
+                    absolutePosition -= textNode.length
+                    console.log("absolutePosition:", absolutePosition)
+                    
+                }
+            }
+
+            selectNode(node, position = 1){
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                this.selection.removeAllRanges();
+                this.selection.addRange(range);
+                this.selection.setPosition(node, position)
+            }
+
+            get range(){
+                return this.selection.getRangeAt(0)
+            }
+
+            get anchorNode(){
+                return this.selection.anchorNode
+            }
+
+            get isCollapsed(){
+                return this.selection.isCollapsed
+            }
+
+            get caretPosition(){
+                return this.range.startOffset;
+            }
+
+            get caret(){
+                return {
+                    start: this.range.startOffset,
+                    end: this.range.endOffset,
+                }
+            }
+
+            get selectedText(){
+                return this.range.toString()
+            }
+
+
+            
+
+        }
+
+        class Editor {
+            constructor({editor, document = ""} = {}){
+                this.editor = editor;
+                this.document = document;
+                this.selection = new Selection();
+                this.clipboard = new Clipboard();
+
+
+                this.startCallback()
+
+                this.textContentBeforeKeyDown = "";
+
+            }
+
+            startCallback(){
+                // Append documents parsed lines to the editor
+                this.editor.append(...this.document.lines)
+                
+                // Attach event listeners
+                this.editor.addEventListener("keydown", this.onKeyDown)
+                this.editor.addEventListener("keyup", this.onKeyUp)
+                this.editor.addEventListener("paste", this.onPaste)
+                this.editor.addEventListener("mousedown", this.onMouseDown)
+                document.addEventListener("selectionchange", this.onSelectionChange)
+            }
+
+            getLine(node = this.selection.anchorNode){
+                const line = (node.getAttribute && node.getAttribute("data-type") === "line")
+                        ? node
+                        : node.parentNode.closest("[data-type='line']");
+                
+                return new Line(line, node)
+            }
+
+            getSelectedLines(){
+                const startLine = this.getLine(this.selection.range.startContainer)
+                const endLine = this.getLine(this.selection.range.endContainer)
+                const lines = [startLine]
+                let currentLine = startLine
+
+                while(currentLine !== endLine){
+                    currentLine = currentLine.nextSibling;
+                    lines.push(currentLine)
+                }
+
+                console.log("startLine:", startLine.split())
+                console.log("endLine:", endLine)
+                console.log("lines", lines)
+            }
+
+            deleteSelectedLines({deleteFirst = true} = {}){
+                const startLine = this.getLine(this.selection.range.startContainer)
+                const endLine = this.getLine(this.selection.range.endContainer)
+                const selectLine = endLine.nextLine || startLine.previousLine;
+                const linesToDelete = []
+                let currentLine = startLine.line
+
+                if(deleteFirst){
+                    linesToDelete.push(startLine.line)
+                }
+
+                while(currentLine !== endLine.line){
+                    currentLine = currentLine.nextSibling;
+                    linesToDelete.push(currentLine)
+                }
+
+                linesToDelete.forEach(line => line.remove())
+
+                if(selectLine){
+                    this.selection.selectNode(selectLine)
+                } else {
+                    // No lines left, need to add blank one.
+                    const newLine = Line.create(" ")
+                    this.editor.append(newLine)
+                }
+
+            }
+
+            
+
+            onKeyDown = (e) => {
+                const ctrlPressed = e.ctrlKey;
+                const key = e.key;
+
+                if(key === "x" && ctrlPressed){
+                    this.onCut(e);
+
+                } else if(key === "ArrowLeft") {
+                    console.log("Left ARrow", this.selection.anchorNode)
+                }
+
+                
+            }
+
+            onKeyUp = (e) => {
+                const refreshBlackListKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Control', 'Alt', 'Meta', 'Shift', 'CapsLock', 'Tab', 'Escape', 'Enter', 'Backspace', 'Delete', 'Insert', 'Home', 'End', 'PageUp', 'PageDown', 'ContextMenu', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12']
+                const key = e.key;
+
+                if(refreshBlackListKeys.includes(key)){
+                    console.log("No refresh")
+                } else {
+                    e.preventDefault()
+                    const anchorNode = this.selection.anchorNode;
+                    const line = this.getLine(anchorNode)
+                    const absolutePosition = line.getAbsoluteCaretPosition()
+                    console.log("anchorNode: ", anchorNode)
+                    console.log("this.selection.selection:", this.selection.selection)
+                    console.log("this.selection.range:", this.selection.range)
+                    
+                }
+
+            }
+            onPaste = (e) => {
+                e.preventDefault();
+                const clipboard = e.clipboardData.getData("text/plain");
+                
+                const caret = this.selection.caret;
+                const baseNode = this.selection.selection.baseNode;
+                const extentNode= this.selection.selection.extentNode;
+
+                const firstLine = this.getLine(baseNode)
+                const lastLine = this.getLine(extentNode)
+
+                const textBeforeCursor = firstLine.split(baseNode, caret.start).left
+                const textAfterCursor = lastLine.split(extentNode, caret.end).right
+                
+                const plaintext = `${textBeforeCursor}${clipboard}${textAfterCursor}`
+
+                const parsedClipboard = HTMLParser.parse(plaintext)
+
+                console.log("parsedClipboard:", parsedClipboard)             
+
+                this.deleteSelectedLines({deleteFirst: false})
+
+                console.log("firstLine:", firstLine)
+                console.log("parsedClipboard:", ...parsedClipboard)
+
+                firstLine.replaceWith(...parsedClipboard)
+            }
+            onCut = (e) => {
+                e.preventDefault();
+
+                if(this.selection.isCollapsed){
+                    const anchorNode = this.selection.anchorNode;
+                    const line = this.getLine(anchorNode).textContent
+
+                    this.clipboard.push(line.textContent)
+
+                } else {
+                    const selectedText = this.selection.selectedText;
+                    this.clipboard.push(selectedText)
+                }
+
+                this.deleteSelectedLines();
+            }
+            onMouseDown = (e) => {}
+            onSelectionChange = (e) => {}
+
+
+
+        }
+
+
+
+        const doc = `
+        0123456789
+        <input
+        <input
+        type="text"
+        class="test-class">
+        <input
+        type="text"
+        class="test-class"
+        <custom-tag>
+        <h1>Heading</h1><p class="my-paragraph">That has been saved as a text file ( well actually just lines of text in a variable for the moment)</p>
+        `;
+
+        const doc2 = `
+        <heading>Hello There==</heading>
+        <p>Lorem Ipsum </p>
+        `
+
+        const editor = new Editor({
+            editor: document.getElementById("editor"),
+            document: new Document(doc),
+        })
+
+        
+
+
+    </script>
+    
+</body>
+</html>

@@ -1,0 +1,72 @@
+@counter-style lines {
+    system: numeric;
+    symbols: "0" "1" "2" "3" "4" "5" "6" "7" "8" "9";
+    suffix: ": ";
+}
+
+.editor {
+    background-color: cornsilk;
+    margin: 0;
+    list-style: lines;
+    cursor: default;
+}
+
+.editor > li {
+    padding: 3px 6px;
+    cursor: text;
+    white-space: pre;
+}
+
+.editor > li:hover {
+    background-color: antiquewhite;
+}
+
+.editor:not(.range-selection) > li.active {
+    background-color: white;
+    outline: 1px solid purple;
+    border-bottom: none 
+}
+
+[data-type="tagname"] {
+    color: purple;
+}
+
+[data-type="opening-angle-bracket"] {
+    color: grey;
+}
+
+[data-type="closing-angle-bracket"] {
+    color: grey;
+}
+
+[data-type="backslash"] {
+    color: grey;
+}
+
+[data-type="attribute-name"] {
+    color: orange;
+}
+
+[data-type="equal-sign"] {
+    color: grey;
+}
+
+[data-type="attribute-value"] {
+    color: brown;
+}
+
+[data-type="open-quote"] {
+    color: grey;
+}
+
+[data-type="close-quote"] {
+    color: grey;
+}
+
+.highlight-pair {
+    background-color: red;;
+}
+
+#predictive-list {
+    position: absolute;
+}

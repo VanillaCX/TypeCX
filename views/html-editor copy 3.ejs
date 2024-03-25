@@ -1,0 +1,556 @@
+<!--
+    TO DO:
+        tabs system
+    
+    NTH: split line breaks recognising an opening tag attributes / end
+
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link href="/css/reset.css" rel="stylesheet" />
+    <link href="/css/common.css" rel="stylesheet" />
+    <link href="/css/editor.css" rel="stylesheet" />
+    <link href="/css/editor-html.css" rel="stylesheet" />
+
+    <style>
+        .editor li[data-type="line"] > div {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div id="modals"></div>
+    
+    <ul class="editor" id="editor" contenteditable="plaintext-only" spellcheck="false"></ul>
+
+
+    <script>
+
+        class Document {    
+            #lines;
+
+            constructor(plaintext){
+                const splitLines = this.splitLines(plaintext);
+
+                this.lines = this.parse(splitLines);
+
+
+            }
+
+            parse(splitLines){
+                // Parent has split into lines. Now I can parse the lines for HTML
+                splitLines.forEach((line, index) => {
+                    line = line.replace(/</g, "&lt;");
+                    splitLines[index] = this.createLine(line)
+                })
+
+                return splitLines
+            }
+
+            splitLines(plaintext){
+                const arrayOfLines = plaintext.split("\n");
+
+                return arrayOfLines.map((line) => {
+                    //return line.trim()
+                    return line
+                });
+            }
+
+            createWrapper(plaintext, type, tag = "div") {
+                const wrapper = document.createElement(tag)
+                wrapper.setAttribute("data-type", "wrapper")
+
+                const innerWrapper = document.createElement("div")
+                innerWrapper.setAttribute("data-type", type)
+
+                const textNode = document.createTextNode(plaintext)
+
+                innerWrapper.append(textNode)
+                wrapper.append(innerWrapper)
+
+                return wrapper
+            }
+
+            createLine(plaintext) {
+                const wrapper = document.createElement("li")
+                wrapper.setAttribute("data-type", "line")
+                wrapper.innerHTML = plaintext
+
+                return wrapper
+            }
+
+
+        }
+
+        class HTMLDoc extends Document {
+            constructor(plaintext){
+                super(plaintext)
+            }
+
+            parse(splitLines){
+                // Opening Tags
+                const openingTagRe = /(?<openingBracket><(?=[^\/]))(?<tagName>[a-zA-Z0-9-]+){1}(?<attributes>[^<>]*)(?<closingBracket>>{0,1})/g;
+                const closingTagRe = /<\/(?<tagName>[a-zA-Z-0-9]+)>/g;
+                const closingTagPlaceholderRe = /{{(?<tagName>[a-zA-Z-0-9]+)}}/g;
+                const attributeRe = /(?<name>[a-zA-Z0-9]+(?==))=(?:(?<quoteType>"|')(?<quotedValue>[^"']*)(?:"|')|(?<bareValue>[a-zA-Z0-9]*))/g;
+                // Parent has split into lines. Now I can parse the lines for HTML
+                splitLines.forEach((line, index) => {
+                    // Replace closing tags with a placeholder to replace AFTER replacing opening tags
+                    let parsedLine = line.replace(closingTagRe, (match, tagName) => {
+                        return `{{${tagName}}}`
+                    })
+
+                    // Replace opening tags
+                    parsedLine = parsedLine.replace(openingTagRe, (match, openingBracket, tagName, attributes, closingBracket) => {
+                        let parsedMatch = "";
+                        
+                        parsedMatch += this.createWrapper("<", "opening-angle-bracket").outerHTML
+                        parsedMatch += this.createWrapper(tagName, "tagname").outerHTML
+
+                        if(attributes){
+                            //parsedMatch += "NEED TO PARSE ATTRIBUTES"
+                            let parsedAttributes = attributes.replace(attributeRe, (match, name, quoteType, quotedValue, bareValue) => {
+                                let parsedAttribute = "";
+
+                                parsedAttribute += this.createWrapper(name, "attribute-name").outerHTML
+                                parsedAttribute += this.createWrapper("=", "equal-sign").outerHTML
+
+                                if(quotedValue){
+                                    parsedAttribute += this.createWrapper(`${quoteType}`, "open-quote").outerHTML
+                                    parsedAttribute += this.createWrapper(quotedValue, "attribute-value").outerHTML
+                                    parsedAttribute += this.createWrapper(`${quoteType}`, "close-quote").outerHTML
+                                } else if(bareValue) {
+                                    parsedAttribute += this.createWrapper(bareValue, "attribute-value").outerHTML
+                                }
+
+                                return parsedAttribute
+                            })
+                            parsedMatch += parsedAttributes
+                        }
+
+                        if(closingBracket){
+                            parsedMatch += this.createWrapper(">", "closing-angle-bracket").outerHTML
+                        }
+
+                        return parsedMatch
+                        
+                    })
+
+
+                    parsedLine = parsedLine.replace(closingTagPlaceholderRe, (match, tagName) => {
+                        let parsedMatch = "";
+                        
+                        parsedMatch += this.createWrapper("<", "opening-angle-bracket").outerHTML
+                        parsedMatch += this.createWrapper("/", "backslash").outerHTML
+                        parsedMatch += this.createWrapper(tagName, "tagname").outerHTML
+                        parsedMatch += this.createWrapper(">", "closing-angle-bracket").outerHTML
+
+                        return parsedMatch
+                        
+                    })
+
+                    splitLines[index] = this.createLine(parsedLine)
+
+                })
+
+
+                return splitLines
+
+            }
+
+        }
+
+        
+        class Cursor {
+            constructor(){
+                this.selection = window.getSelection();
+            }
+
+            get range (){
+                return this.selection.getRangeAt(0)
+            }
+
+            get anchorNode (){
+                return this.selection.anchorNode
+            }
+
+            get baseNode (){
+                return this.selection.baseNode
+            }
+
+
+            get baseOffset (){
+                return this.selection.baseOffset
+            }
+
+            get extentNode (){
+                return this.selection.extentNode
+            }
+
+            get extentOffset (){
+                return this.selection.extentOffset
+            }
+
+            get isCollapsed(){
+                return this.selection.isCollapsed;
+            }
+
+            collapseToStart(){
+                this.selection.collapseToStart()
+            }
+
+            moveTo(node, position = 0) {
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                this.selection.removeAllRanges();
+                this.selection.addRange(range);
+                this.selection.setPosition(node, position)
+            }
+
+        }
+
+        class Editor {
+            constructor({doc = "New Document", editor, mimetype = "html"} = {}){
+                this.mimetype = mimetype;
+                this.editor = editor;
+                this.doc = this.createDoc(doc, mimetype);
+                this.cursor = new Cursor();
+
+                this.editor.append(...this.doc.lines);
+
+                this.editor.addEventListener("keydown", this.onKeyDown);
+                this.editor.addEventListener("keyup", this.onKeyUp);
+                this.editor.addEventListener("paste", this.onPaste);
+
+                this.changedLines = []
+            }
+
+            getLineContaining(node) {
+                const startNode = (node.nodeType === Node.TEXT_NODE)
+                    ? node.parentElement
+                    : node;
+                
+                const line = startNode.closest("[data-type='line']")
+
+                return line;
+            }
+
+            get activeLine() {
+                const anchorNode = this.cursor.anchorNode;
+
+                return this.getLineContaining(anchorNode)
+                
+            }
+
+            moveToAbsolute(line, position){
+                const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+                let accumLength = 0;
+
+                while(walker.nextNode()) {
+                    const currentNode = walker.currentNode;
+
+                    if(position <= accumLength + currentNode.length){
+                        // Found node
+                        const caretPosition = position - accumLength
+                        this.cursor.moveTo(currentNode, caretPosition)
+                        break;
+                    } 
+
+                    accumLength += currentNode.length;
+                    
+                }
+            }
+
+            get leftOfCursor(){
+                const baseNode = this.cursor.baseNode;
+                const baseOffset = this.cursor.baseOffset;
+                const line = this.getLineContaining(baseNode)
+
+                const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+                let plaintext = "";
+
+                while(walker.nextNode()) {
+                    const currentNode = walker.currentNode;
+
+                    if(currentNode === baseNode){
+                        plaintext += currentNode.textContent.substring(0, baseOffset)
+                        break;
+                    } else {
+                        plaintext += currentNode.textContent
+                    }
+
+                    
+                }
+
+                return plaintext
+            }
+
+            get rightOfCursor(){
+                const extentNode = this.cursor.extentNode;
+                const extentOffset = this.cursor.extentOffset;
+                const line = this.getLineContaining(extentNode)
+
+                const walker = document.createTreeWalker(line, NodeFilter.SHOW_ALL)
+                let reachedExtentNode = false;
+                let plaintext = "";
+
+                while(walker.nextNode()){
+                    const currentNode = walker.currentNode;
+
+                    if(reachedExtentNode && currentNode.nodeType === Node.TEXT_NODE){
+                        plaintext += currentNode.textContent
+                    }
+
+                    if (currentNode === extentNode && currentNode.nodeType === Node.TEXT_NODE) {
+                        plaintext += currentNode.textContent.substring(extentOffset)
+                        reachedExtentNode = true;
+                    }
+                    
+                }
+
+                return plaintext
+            }
+
+            deleteSelectedLines({keepFirstLine = true} = {}){
+                const linesToDelete = this.selectedLines;
+                const selectLine = (keepFirstLine)
+                    ? linesToDelete.shift()
+                    : linesToDelete[linesToDelete.length - 1].nextElementSibling
+                         || linesToDelete[0].previousElementSibling;
+               
+                linesToDelete.forEach((lineToDelete) => {
+                    // Search for line in this.doc.lines
+                    const removeAtIndex = this.doc.lines.findIndex((line) => lineToDelete === line);
+                    // Remove LI from DOM
+                    this.doc.lines[removeAtIndex].remove()
+
+                    // Remove LI from array
+                    this.doc.lines.splice(removeAtIndex, 1)
+                })
+                
+                if(selectLine){
+                    this.cursor.moveTo(selectLine);
+
+                } else {
+                    const newLine = this.doc.createLine("New Line ...")
+
+                    this.editor.append(newLine)
+                    this.cursor.moveTo(newLine)
+                }
+
+            }
+
+            get selectedLines(){
+                const baseNode = this.cursor.baseNode;
+                const extentNode = this.cursor.extentNode;
+
+                const firstLine = this.getLineContaining(baseNode)
+                const lastLine = this.getLineContaining(extentNode)
+
+                console.log("baseNode:", baseNode)
+                console.log("extentNode:", extentNode)
+
+                // Single Line
+                if(baseNode === extentNode){
+                    return [firstLine]
+                }
+
+                // Multiple Lines ...
+                const lines = [firstLine];
+                let currentLine = firstLine.nextElementSibling;
+
+                while(currentLine !== lastLine){
+                    lines.push(currentLine)
+                    currentLine = currentLine.nextElementSibling;
+                }
+
+                lines.push(lastLine)
+
+                return lines;
+
+            }
+
+            createDoc(doc, mimetype = this.mimetype){
+                let docObj;
+
+                switch(mimetype){
+                    case "html":
+                        docObj = new HTMLDoc(doc)
+                        break;
+                    default:
+                        docObj = new Document(doc);
+                        break
+                }
+
+                return docObj
+            }
+/*
+one
+two
+three
+*/
+            onPaste = (e) => {
+                e.preventDefault();
+                const pastedtext = e.clipboardData.getData("text/plain")
+
+                const linesToPaste = this.doc.splitLines(pastedtext);
+                const leftOfCursor = this.leftOfCursor;
+                const rightOfCursor = this.rightOfCursor;
+                const absoluteCursorStart = leftOfCursor.length;
+                const lengthLastPastedLine = linesToPaste[linesToPaste.length -1].length;
+
+                // Add text left of cursor to begining of first line to insert
+                linesToPaste[0] = leftOfCursor + linesToPaste[0];
+
+                // Add text right of cursor to end of last line to insert
+                linesToPaste[linesToPaste.length -1] += rightOfCursor;
+
+                // Remove any selected lines
+                this.deleteSelectedLines()
+
+                // Calculate position of where caret should be placed after paste
+                const moveCaretTo = (linesToPaste.length === 1)
+                    ? absoluteCursorStart + lengthLastPastedLine
+                    : lengthLastPastedLine
+
+                const parsedLinesToPaste = this.doc.parse(linesToPaste)
+
+                // Find index of active line in the document object
+                const pasteAtIndex = this.doc.lines.findIndex((line) => line === this.activeLine)
+
+                // Remove active line and insert newly pasted lines
+                this.doc.lines.splice(pasteAtIndex, 1, ...parsedLinesToPaste);
+
+                // Update Editor
+                this.activeLine.replaceWith(...parsedLinesToPaste)
+
+                // Move cursor into position in the last pasted line
+                this.moveToAbsolute(parsedLinesToPaste[parsedLinesToPaste.length - 1], moveCaretTo)
+
+            }
+            onKeyUp = (e) => {
+                const key = e.key;
+                const altKey = e.altKey;
+                const ctrlKey = e.ctrlKey;
+                const metaKey = e.metaKey;
+                const shiftKey = e.shiftKey;
+            }
+
+            onKeyDown = (e) => {
+                const key = e.key;
+                const altKey = e.altKey;
+                const ctrlKey = e.ctrlKey;
+                const metaKey = e.metaKey;
+                const shiftKey = e.shiftKey;
+                const value = this.editor.innerText;
+
+                if(key === "Tab"){
+                    if(shiftKey){
+                        console.log("TAB LEFT")
+                    } else {
+                        console.log("TAB RIGHT")
+                    }
+                }
+            }
+
+        }
+
+        const doc = `<html>
+    <head></head>
+    <body>
+        <form
+            method="post"
+            class="my-form">
+        
+            <input 
+                type="text"
+                class="my-input"
+                required=true
+                placeholder="Enter text">
+
+            
+            <input type="text" class="my-input" required=true placeholder="Enter text">
+        </form>
+        <heading>
+            <h1>Heading goes here</h1>
+            <h2>Sub heading goes here</h2>
+        </heading>
+        <p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Delectus obcaecati, suscipit similique at minima debitis? Quod minus error quasi veniam. Possimus in enim a voluptate officia consequuntur dolores cum obcaecati!</p>
+
+        <div class="my-class">
+            <div class="my-class andanother">
+                <div style="color:red; background-color:pink">
+                    <span>Hello</span>
+                    <input type="text" required=true />
+                </div>
+            </div>
+        </div>
+
+        <ul>
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+            <li>
+                List Item <button type="button">Button</button>
+            </li>
+            
+        </ul>
+    </body>
+</html>    
+        `;
+
+        const smallDoc = `<html>
+    <head>
+        <title>Hey</title>
+    </head>
+</html>`;
+
+const tinyDoc = `<head>
+    <title>Hey</title>
+</head>`;
+
+        const typeEditor = new Editor({
+            doc: tinyDoc,
+            editor: document.getElementById("editor"),
+            mimetype: "html"
+        })
+
+
+
+    </script>
+    
+</body>
+</html>
