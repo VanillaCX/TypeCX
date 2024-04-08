@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            margin: 0;
+            display: grid;
+            grid-template-areas: "truth edit preview";
+            grid-template-columns: 33vw 34vw 33vw;
+        }
+
+        #edit {
+            grid-area: edit;
+            position: relative;
+            background-color: burlywood;
+        }
+
+        #truth {
+            grid-area: truth;
+            background-color: grey;
+            color: white
+        }
+
+        #preview {
+            grid-area: preview;
+            height: 100%;
+            width: 100%;
+            border: 0;
+        }
+
+        #edit,
+        #truth {
+            font-family: monospace;
+            font-size: 1.25em;
+            font-weight: 400;
+        }
+
+
+
+        
+        
+        </style>
+
+        <style>
+            .html-bracket-left {
+                color: grey;
+            }
+
+            .html-bracket-right {
+                color: grey;
+                
+            }
+
+            .html-back-slash {
+                color: grey;
+            }
+
+            .html-nodename {
+                color: blue;
+            }
+
+            .html-attr-name {
+                color: lightgreen;
+            }
+
+            .html-attr-quote-open {
+                color: grey;
+            }
+
+            .html-attr-value {
+                color: darkgreen;
+            }
+
+            .html-attr-quote-close {
+                color: grey;
+            }
+
+            .html-text {
+                
+            }
+
+            .html-newline:before {
+                content: " ";
+                background-color: black;
+            }
+
+            
+
+            .html-equal-sign {
+                color: grey;
+            }
+
+            .html-spacer {
+                
+            }
+
+        </style>
+
+</head>
+<body>
+    <div id="edit" contenteditable="plaintext-only" spellcheck="false"></div>
+    <textarea id="truth" spellcheck="false">
+<html>
+    <head>
+        <title>My Page</title>
+    </head>
+    <body>
+        <h1 class="header">My Page</h1>
+        <h2>Welcome</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Eos iste maxime debitis alias suscipit voluptates! Ipsum libero accusamus beatae dolore iste labore! Corporis, voluptate quam! Soluta repellendus et dolorem modi?</p>
+    </body>
+</html>
+    </textarea>
+    <iframe id="preview"></iframe>
+
+    <script>
+        
+        const edit = document.getElementById("edit")
+        const truth = document.getElementById("truth")
+        const preview = document.getElementById("preview")
+
+        const previewWindow = preview.contentWindow;
+
+
+        const wrap = (plaintext, classes, {key, value} = {}) => {
+            const wrapper = document.createElement("span")
+            wrapper.classList.add(...classes)
+
+            if(key && value){
+                wrapper.dataset[key] = value;
+            }
+            const textNode = document.createTextNode(plaintext);
+
+            wrapper.append(textNode);
+
+            return wrapper
+        }
+
+        const spacer = (length) => {
+            return " ".repeat(length)
+        }
+
+        const patterns = [
+            {
+                mimetype: "html",
+                name: "newline",
+                re: /(?<newline>\n)/g,
+                replacerFn: ({newline} = {}) => {
+                    let html = wrap("\n", ["html-newline"]).outerHTML
+
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "nodename",
+                re: /(?<=<)(?<opentag>[\w-]+)|(?<=\/)(?<closetag>[\w-]+)/g,
+                replacerFn: ({opentag, closetag} = {}) => {
+                    const nodename = opentag||closetag;
+                    const classes = (opentag)
+                        ? ["html-opening-tag"]
+                        : ["html-closing-tag"]
+                    const uuid = createUUID();
+                    
+                    classes.push("html-nodename")
+
+                    let html = wrap(nodename, classes, {key: "nodeNameId", value: uuid}).outerHTML
+
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "attributes",
+                re: /(?!<[^<]* )(?<attrName>[\w\-]*)(?<spacer_1> *)=(?<spacer_2> *)(?:(?:(?<quoteType>["'])(?<stringValue>[\/\w.,= \-]*)\k<quoteType>)|(?<value>[\w\-.]+))/g,
+                replacerFn: ({attrName, spacer_1, spacer_2, quoteType, stringValue, value} = {}) => {
+                    let html = wrap(attrName, ["html-attr-name"]).outerHTML;
+
+                    html += wrap(spacer_1, ["html-spacer"]).outerHTML
+                    html += wrap("=", ["html-equal-sign"]).outerHTML
+                    html += wrap(spacer_2, ["html-spacer"]).outerHTML
+
+                    if(quoteType){
+                        html += wrap(quoteType, ["html-attr-quote-open"]).outerHTML
+                    }
+
+                    html += wrap(stringValue||value, ["html-attr-value"]).outerHTML
+
+                    if(quoteType){
+                        html += wrap(quoteType, ["html-attr-quote-close"]).outerHTML
+                    }
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "brackets",
+                re: /(?<selfClosingBracket>\/>)|(?<closeTagLeftBracket><\/)(?=[\w]+>)|(?<openTagLeftBracket><)(?=[\w-]+)|(?!<[\s\S]*?)(?<rightBracket>>)/g,
+                replacerFn: ({selfClosingBracket, closeTagLeftBracket, openTagLeftBracket, rightBracket} = {}) => {
+                    let html = "";
+
+                    if(openTagLeftBracket){
+                        html += wrap("<", ["html-bracket-left"]).outerHTML
+                    } else if(closeTagLeftBracket){
+                        html += wrap("<", ["html-bracket-right"]).outerHTML
+                        html += wrap("/", ["html-back-slash"]).outerHTML
+
+                    } else if(rightBracket){
+                        html += wrap(">", ["html-bracket-right"]).outerHTML
+
+                    } else if(selfClosingBracket){
+                        html += wrap("/", ["html-back-slash"]).outerHTML
+                        html += wrap(">", ["html-bracket-right"]).outerHTML
+
+                    }
+                    return html
+                }
+            }
+
+        ]
+
+        const cachedPatterns = {}
+
+        const createUUID = ({prefix = "", removeDashes = false} = {}) => {
+            let randomUUID = crypto.randomUUID();
+
+            if(removeDashes){
+                randomUUID.replace("-", "");
+            }
+
+            return `${prefix}${randomUUID}`
+        }
+
+        const getPatternsByMimetype = (mimetype) => {
+            const replacerFunctions = {};
+            let regularExpressions = [];
+
+            patterns
+                .filter(pattern => mimetype === mimetype)
+                .forEach((pattern, index) => {
+                    const uuid = `__PATTERN__${mimetype.toUpperCase()}_${index}`;
+                    const re = `(?<${uuid}>${pattern.re.source})`;
+
+                    replacerFunctions[uuid] = pattern.replacerFn;
+                    regularExpressions.push(re);
+                })
+            
+            return cachedPatterns[mimetype] = {
+                re: new RegExp(regularExpressions.join("|"), "g"),
+                replacerFunctions
+            } 
+        }
+
+        const parse = (plaintext, mimetype) => {
+            const {re, replacerFunctions} = cachedPatterns[mimetype] || getPatternsByMimetype(mimetype)
+
+            plaintext = plaintext.replace(re, (match, ...args) => {
+                const groups = args[args.length - 1];
+                const groupsAsArray = Array.from(Object.entries(groups));
+
+                const [uuid] = groupsAsArray.find(([group, value]) => group.startsWith(`__PATTERN__${mimetype.toUpperCase()}_`) && value);
+                return replacerFunctions[uuid](groups)
+            })
+
+            return plaintext
+
+        }
+
+        
+
+        let parsed = parse(truth.value, "html")
+
+        edit.innerHTML = parsed;
+
+        const walker = document.createTreeWalker(edit, NodeFilter.SHOW_TEXT)
+        const isolatedTextNodes = {}
+
+        // Find isolated textnodes
+        while(walker.nextNode()) {
+            if(walker.currentNode.textContent.trim() !== "" && walker.currentNode.parentNode.id === "edit"){
+                const uuid = createUUID();
+                isolatedTextNodes[uuid] = {
+                    node: walker.currentNode,
+                    replacementNode: wrap(walker.currentNode.textContent, ["html-text"], {key: "textNodeId", value: uuid})
+                }
+            } 
+        }
+
+        // Replace isolated textnodes
+        Array.from(Object.entries(isolatedTextNodes)).forEach(([uuid, {node, replacementNode}]) => {
+            node.replaceWith(replacementNode)
+        })
+
+        // Get html content for preview window
+        let previewHTML = "";
+        const previewWalker = document.createTreeWalker(edit, NodeFilter.SHOW_TEXT);
+
+        while(previewWalker.nextNode()) {
+            const textNodeUUID = (previewWalker.currentNode.parentNode.dataset) ? previewWalker.currentNode.parentNode.dataset.textNodeId : null;
+            const nodeNameUUID = (previewWalker.currentNode.parentNode.dataset) ? previewWalker.currentNode.parentNode.dataset.nodeNameId : null;
+            if(textNodeUUID){
+                previewHTML += isolatedTextNodes[textNodeUUID].replacementNode.outerHTML;
+            } else if (nodeNameUUID) {
+                previewHTML += `${previewWalker.currentNode.textContent} data-node-name-id="${nodeNameUUID}"`;
+            } else {
+                previewHTML += previewWalker.currentNode.textContent;
+            }
+        }
+
+        const domParser = new DOMParser();
+        preview.contentWindow.document.firstChild.replaceWith(domParser.parseFromString(previewHTML, "text/html").firstChild);
+        const previewBody = preview.contentWindow.document.querySelector("body");
+
+        previewBody.addEventListener("click", (event) => {
+            const element = event.target;
+            const uuid = element.dataset.textNodeId;
+            const isEditable = (uuid) ? true : false;
+
+            if(isEditable){
+                const originalTextContent = element.textContent;
+                element.setAttribute("contenteditable", "plaintext-only")
+                element.setAttribute("spellcheck", "false")
+                element.focus()
+                console.log(element)
+
+                element.addEventListener("blur", (blurEvent) => {
+                    const textContentOnBlur = element.textContent;
+
+                    if(originalTextContent !== textContentOnBlur){
+                        console.log("UPDATE EDIT ", uuid, " with ", textContentOnBlur)
+                        const editTwin = edit.querySelector(`span[data-text-node-id='${uuid}']`);
+
+                        editTwin.textContent = textContentOnBlur;
+
+                        // Update truth
+                        truth.value = edit.textContent
+                    }
+                    element.removeAttribute("contenteditable")
+                    element.removeAttribute("spellcheck")
+                }, {once: true})
+            }
+        })
+
+        // Convert edit > truth
+        let truthHTML = edit.textContent;
+
+        truth.value = truthHTML
+
+        console.log("truthHTML:", truthHTML)
+
+        const selection = window.getSelection();
+
+        edit.addEventListener("keyup", (event) => {
+            const anchorNode = selection.anchorNode;
+            const key = event.key
+            if (simpleUpdateTextNode) {
+                if(simpleUpdateTextNode.anchorNode === anchorNode && simpleUpdateTextNode.textContent !== anchorNode.textContent){
+                    previewBody.querySelector(`[data-text-node-id='${simpleUpdateTextNode.uuid}']`).textContent = anchorNode.textContent
+                }
+                
+            } else if (simpleUpdateNodeName) {
+                if(simpleUpdateNodeName.anchorNode === anchorNode && simpleUpdateNodeName.nodeName !== anchorNode.textContent){
+                    const oldTag = previewBody.querySelector(`[data-node-name-id='${simpleUpdateNodeName.uuid}']`);
+                    const attributes = oldTag.attributes;
+
+                    
+
+                    const newTag = document.createElement(anchorNode.textContent)
+
+                    if(oldTag.hasAttributes()){
+                        for(const attr of oldTag.attributes){
+                            newTag.setAttribute(attr.name, attr.value)
+                        }
+                    }
+
+                    newTag.append(...oldTag.children)
+                    oldTag.replaceWith(newTag);
+
+                    // Now need to update the matching closing tag in the preview
+                }
+                
+            }
+        })
+
+        let simpleUpdateTextNode = null
+        let simpleUpdateNodeName = null
+
+        edit.addEventListener("keydown", (event) => {
+            const key = event.key
+            const anchorNode = selection.anchorNode;
+            const focusNode = selection.focusNode;
+            const isCollapsed = selection.isCollapsed;
+            const textNodeId = (anchorNode.parentNode && anchorNode.parentNode.dataset) ? anchorNode.parentNode.dataset.textNodeId : null;
+            const nodeNameId = (anchorNode.parentNode && anchorNode.parentNode.dataset && anchorNode.parentNode.classList.contains("html-opening-tag")) ? anchorNode.parentNode.dataset.nodeNameId : null;
+            simpleUpdateTextNode = ((anchorNode === focusNode) && textNodeId) ? {anchorNode, uuid: textNodeId, textContent: anchorNode.textContent} : null;
+            simpleUpdateNodeName = ((anchorNode === focusNode) && nodeNameId) ? {anchorNode, uuid: nodeNameId, nodeName: anchorNode.textContent} : null;
+            //const line = getLine();
+            console.log("textNodeId:", textNodeId)
+
+            if(isCollapsed && textNodeId){
+                
+            } else {
+                // More complex ...
+
+            }
+
+            
+        })
+        
+
+    </script>
+
+</body>
+</html>

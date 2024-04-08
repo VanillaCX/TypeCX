@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            margin: 0;
+            display: grid;
+            grid-template-areas: "truth edit preview";
+            grid-template-columns: 33vw 34vw 33vw;
+        }
+
+        #edit {
+            grid-area: edit;
+            position: relative;
+            background-color: burlywood;
+        }
+
+        #truth {
+            grid-area: truth;
+            background-color: grey;
+            color: white
+        }
+
+        #preview {
+            grid-area: preview;
+            height: 100%;
+            width: 100%;
+            border: 0;
+        }
+
+        #edit,
+        #truth {
+            font-family: monospace;
+            font-size: 1.25em;
+            font-weight: 400;
+        }
+
+
+
+        
+        
+        </style>
+
+        <style>
+            .html-bracket-left {
+                color: grey;
+            }
+
+            .html-bracket-right {
+                color: grey;
+                
+            }
+
+            .html-back-slash {
+                color: grey;
+            }
+
+            .html-nodename {
+                color: blue;
+            }
+
+            .html-attr-name {
+                color: lightgreen;
+            }
+
+            .html-attr-quote-open {
+                color: grey;
+            }
+
+            .html-attr-value {
+                color: darkgreen;
+            }
+
+            .html-attr-quote-close {
+                color: grey;
+            }
+
+            .html-text {
+                
+            }
+
+            .html-newline:before {
+                content: " ";
+                background-color: black;
+            }
+
+            
+
+            .html-equal-sign {
+                color: grey;
+            }
+
+            .html-spacer {
+                
+            }
+
+        </style>
+
+</head>
+<body>
+    <div id="edit" contenteditable="plaintext-only" spellcheck="false"></div>
+    <textarea id="truth" spellcheck="false">
+<html>
+    <head>
+        <title>My Page</title>
+    </head>
+    <body>
+        <h1 class="header">My Page</h1>
+        <h2>Welcome</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Eos iste maxime debitis alias suscipit voluptates! Ipsum libero accusamus beatae dolore iste labore! Corporis, voluptate quam! Soluta repellendus et dolorem modi?</p>
+    </body>
+</html>
+    </textarea>
+    <iframe id="preview"></iframe>
+
+    <script>
+        
+        const edit = document.getElementById("edit")
+        const truth = document.getElementById("truth")
+        const preview = document.getElementById("preview")
+
+        const previewWindow = preview.contentWindow;
+
+
+        const wrap = (plaintext, classes, {key, value} = {}) => {
+            const wrapper = document.createElement("span")
+            wrapper.classList.add(...classes)
+
+            if(key && value){
+                wrapper.dataset[key] = value;
+            }
+            const textNode = document.createTextNode(plaintext);
+
+            wrapper.append(textNode);
+
+            return wrapper
+        }
+
+        const spacer = (length) => {
+            return " ".repeat(length)
+        }
+
+        const patterns = [
+            {
+                mimetype: "html",
+                name: "newline",
+                re: /(?<newline>\n)/g,
+                replacerFn: ({newline} = {}) => {
+
+                    const options = {key: "newLineId", value: createUUID()}
+                    let html = wrap("\n", ["html-newline"], options).outerHTML
+
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "nodename",
+                re: /(?<=<)(?<opentag>[\w-]+)|(?<=\/)(?<closetag>[\w-]+)/g,
+                replacerFn: ({opentag, closetag} = {}) => {
+                    const nodename = opentag||closetag;
+                    const classes = (opentag)
+                        ? ["html-opening-tag"]
+                        : ["html-closing-tag"]
+
+                    const options = {key: "nodeNameId", value: createUUID()}
+                    
+                    classes.push("html-nodename")
+
+                    let html = wrap(nodename, classes, options).outerHTML
+
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "attributes",
+                re: /(?!<[^<]* )(?<attrName>[\w\-]*)(?<spacer_1> *)=(?<spacer_2> *)(?:(?:(?<quoteType>["'])(?<stringValue>[\/\w.,= \-]*)\k<quoteType>)|(?<value>[\w\-.]+))/g,
+                replacerFn: ({attrName, spacer_1, spacer_2, quoteType, stringValue, value} = {}) => {
+                    let html = wrap(attrName, ["html-attr-name"]).outerHTML;
+
+                    html += wrap(spacer_1, ["html-spacer"]).outerHTML
+                    html += wrap("=", ["html-equal-sign"]).outerHTML
+                    html += wrap(spacer_2, ["html-spacer"]).outerHTML
+
+                    if(quoteType){
+                        html += wrap(quoteType, ["html-attr-quote-open"]).outerHTML
+                    }
+
+                    html += wrap(stringValue||value, ["html-attr-value"]).outerHTML
+
+                    if(quoteType){
+                        html += wrap(quoteType, ["html-attr-quote-close"]).outerHTML
+                    }
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "brackets",
+                re: /(?<selfClosingBracket>\/>)|(?<closeTagLeftBracket><\/)(?=[\w]+>)|(?<openTagLeftBracket><)(?=[\w-]+)|(?!<[\s\S]*?)(?<rightBracket>>)/g,
+                replacerFn: ({selfClosingBracket, closeTagLeftBracket, openTagLeftBracket, rightBracket} = {}) => {
+                    let html = "";
+
+                    if(openTagLeftBracket){
+                        html += wrap("<", ["html-bracket-left"]).outerHTML
+                    } else if(closeTagLeftBracket){
+                        html += wrap("<", ["html-bracket-right"]).outerHTML
+                        html += wrap("/", ["html-back-slash"]).outerHTML
+
+                    } else if(rightBracket){
+                        html += wrap(">", ["html-bracket-right"]).outerHTML
+
+                    } else if(selfClosingBracket){
+                        html += wrap("/", ["html-back-slash"]).outerHTML
+                        html += wrap(">", ["html-bracket-right"]).outerHTML
+
+                    }
+                    return html
+                }
+            }
+
+        ]
+
+        const cachedPatterns = {}
+
+        const createUUID = ({prefix = "", removeDashes = false} = {}) => {
+            let randomUUID = crypto.randomUUID();
+
+            if(removeDashes){
+                randomUUID.replace("-", "");
+            }
+
+            return `${prefix}${randomUUID}`
+        }
+
+        const getPatternsByMimetype = (mimetype) => {
+            const replacerFunctions = {};
+            let regularExpressions = [];
+
+            patterns
+                .filter(pattern => mimetype === mimetype)
+                .forEach((pattern, index) => {
+                    const uuid = `__PATTERN__${mimetype.toUpperCase()}_${index}`;
+                    const re = `(?<${uuid}>${pattern.re.source})`;
+
+                    replacerFunctions[uuid] = pattern.replacerFn;
+                    regularExpressions.push(re);
+                })
+            
+            return cachedPatterns[mimetype] = {
+                re: new RegExp(regularExpressions.join("|"), "g"),
+                replacerFunctions
+            } 
+        }
+
+        const parse = (plaintext, mimetype) => {
+            const {re, replacerFunctions} = cachedPatterns[mimetype] || getPatternsByMimetype(mimetype)
+
+            plaintext = plaintext.replace(re, (match, ...args) => {
+                const groups = args[args.length - 1];
+                const groupsAsArray = Array.from(Object.entries(groups));
+
+                const [uuid] = groupsAsArray.find(([group, value]) => group.startsWith(`__PATTERN__${mimetype.toUpperCase()}_`) && value);
+                return replacerFunctions[uuid](groups)
+            })
+
+            return plaintext
+
+        }
+
+        
+        const selection = window.getSelection();
+
+        let parsed = parse(truth.value, "html")
+
+        edit.innerHTML = parsed;
+
+        const editHTML = edit.textContent;
+         // Replace truth content with edit text content
+         truth.value = editHTML
+
+        // Convert Edit text content into doc fragment and put in iframe
+        const domParser = new DOMParser();
+        preview.contentWindow.document.firstChild.replaceWith(domParser.parseFromString(editHTML, "text/html").firstChild);
+
+        // Add event listeners to preview
+        const previewBody = preview.contentWindow.document.querySelector("body");
+
+        previewBody.addEventListener("click", (event) => {
+            console.log("PREVIEW: click", event.target)
+        })
+
+        // Add event listeners to edit
+        edit.addEventListener("keyup", (event) => {
+            //console.log("EDIT: keyup", event.target)
+        })
+
+        edit.addEventListener("keydown", (event) => {
+            //console.log("EDIT: keydown", event.target)
+        })
+
+        const createFragmentFromString = (htmlString) => {
+            const range = document.createRange();
+            const docFragment = range.createContextualFragment(htmlString);
+            
+            return docFragment;
+        }
+
+        const isInEditor = (node) => {
+            if(!node){
+                return false
+            }
+            const found = (node.nodeType === 3)
+                ? node.parentNode.closest("#edit")
+                : node.closest("#edit");
+
+            return found;
+        }
+
+        const observer = new MutationObserver((records, observer) => {
+            console.group("UPDATE CHANGES")
+            let firstNode = records[0].target;
+            let lastNode = records[records.length - 1].target;
+            const nodes = []
+
+            
+            if(firstNode.parentNode.nodeName.toLowerCase() === "span"){
+                firstNode = firstNode.parentNode
+            }
+
+            if(lastNode.parentNode.nodeName.toLowerCase() === "span"){
+                lastNode = lastNode.parentNode
+            }
+
+            let caretOffset = selection.anchorOffset;
+            let caretCounter = caretOffset;
+
+            // Find beginning of line
+            let walkNode = firstNode.previousSibling;
+            while (isInEditor(walkNode)) {
+                nodes.push(walkNode);
+                caretCounter += walkNode.textContent.length;
+
+                if(walkNode.classList && walkNode.classList.contains("html-newline")){
+                    break;
+                }
+
+                walkNode = walkNode.previousSibling;
+            }
+
+            nodes.reverse()
+            nodes.push(firstNode)
+
+            if(firstNode !== lastNode){
+                nodes.push(lastNode)
+            }
+
+            // Find end of line
+            walkNode = lastNode.nextSibling;
+            while (isInEditor(walkNode)) {
+                nodes.push(walkNode);
+
+                if(walkNode.classList && walkNode.classList.contains("html-newline")){
+                    break;
+                }
+
+                walkNode = walkNode.nextSibling;
+            }
+
+            // Get text content of nodes in line
+            const plaintext = nodes.map(node => node.textContent).join("")
+
+            // Parse the text content
+            const parsedText = parse(plaintext, "html");
+
+            // Create doc fragment
+            const docFrag = createFragmentFromString(parsedText);
+            const newRootNode = docFrag.childNodes[0]
+
+            // Remove first node in node list (later replaced with doc fragment children)
+            const rootNode = nodes.shift()
+
+            // Remove the remaining nodes in line
+            nodes.forEach(node => node.remove())
+
+            // Replace the root node ( first node in the current line ) with the parsed nodes
+            rootNode.replaceWith(...docFrag.childNodes)
+
+            /*walkNode = newRootNode;
+            let count = 0;
+            let targetNode = null;
+
+            while(isInEditor(walkNode)) {
+                console.log("walkNode:", walkNode)
+                if(count + walkNode.textContent.length > caretCounter){
+                    targetNode = walkNode;
+                    break;
+                }
+
+                count += walkNode.textContent.length;
+
+                walkNode = walkNode.nextSibling;
+            }
+
+            if(targetNode.nodeName.toLowerCase() === "span"){
+                targetNode = targetNode.firstChild
+            }
+            console.log("Put cursor in this node: ", targetNode)
+            selection.setPosition(targetNode, caretOffset)*/
+
+            console.log("PUT CURSOR AT #", caretCounter)
+            console.log("from newRootNode:", newRootNode)
+            console.groupEnd();
+            
+        });
+
+        // Configure the observer to watch for changes in the content of the div
+        const observerConfigTextNodes = { childList: false, subtree: true, characterData: true, characterDataOldValue: true, attributes: false };
+
+        // Start observing the contenteditable div
+        observer.observe(edit, observerConfigTextNodes);
+        
+
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!--
+    TO DO:
+        tabs system
+    
+    NTH: split line breaks recognising an opening tag attributes / end
+
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link href="/css/reset.css" rel="stylesheet" />
+    <link href="/css/common.css" rel="stylesheet" />
+    <link href="/css/editor.css" rel="stylesheet" />
+    <link href="/css/editor-html.css" rel="stylesheet" />
+
+    <style>
+        .editor li[data-type="line"] > div {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div id="modals"></div>
+    <predictive-list id="predictive-list"></predictive-list>
+    
+    <ul class="editor" id="html_editor" contenteditable="plaintext-only" spellcheck="false" data-mimetype="html"></ul>
+    <ul class="editor" id="js_editor" contenteditable="plaintext-only" spellcheck="false" data-mimetype="js"></ul>
+
+
+    <script type="module" src="/customElements/index.js"></script>
+    <script type="module" src="/js/html-editor.js"></script>
+    
+</body>
+</html>

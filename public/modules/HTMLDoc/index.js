@@ -11,6 +11,7 @@ const tags = {
 deprecated: true },
 { text: "address" },
 { text: "area" },
+{ text: "/implement close tag" },
 { text: "article" },
 { text: "aside" },
 { text: "audio" },
@@ -179,8 +180,10 @@ class HTMLDoc extends Document {
 
     parse(splitLines){
         // Opening Tags
-        const openingTagRe = /(?<openingBracket><(?=[^\/]))(?<tagName>[a-zA-Z0-9-]+){1}(?<attributes>[^<>]*)(?<closingBracket>>{0,1})/g;
+        const openingTagRe2 = /(?<openingBracket><(?=[^\/]))(?<tagName>[a-zA-Z0-9-\/]+){1}(?<attributes>[^<>]*)(?<closingBracket>>{0,1})/g;
+        const openingTagRe = /(?<openingBracket><(?=[^]))(?<tagName>[a-zA-Z0-9-/]+){1}(?<attributes>[^<>]*)(?<closingBracket>>{0,1})/g;
         const closingTagRe = /<\/(?<tagName>[a-zA-Z-0-9]+)>/g;
+        const unclosedClosingTagRe = /<\//g;
         const closingTagPlaceholderRe = /{{(?<tagName>[a-zA-Z-0-9]+)}}/g;
         const attributeRe = /(?<name>[a-zA-Z0-9]+(?==))=(?:(?<quoteType>"|')(?<quotedValue>[^"']*)(?:"|')|(?<bareValue>[a-zA-Z0-9]*))/g;
         // Parent has split into lines. Now I can parse the lines for HTML
@@ -193,7 +196,6 @@ class HTMLDoc extends Document {
             // Replace opening tags
             parsedLine = parsedLine.replace(openingTagRe, (match, openingBracket, tagName, attributes, closingBracket) => {
                 let parsedMatch = "";
-                
                 parsedMatch += this.createWrapper("<", "opening-angle-bracket").outerHTML
                 parsedMatch += this.createWrapper(tagName, "tagname", "tagname").outerHTML
 
@@ -226,7 +228,6 @@ class HTMLDoc extends Document {
                 
             })
 
-
             parsedLine = parsedLine.replace(closingTagPlaceholderRe, (match, tagName) => {
                 let parsedMatch = "";
                 
@@ -242,8 +243,6 @@ class HTMLDoc extends Document {
             if(parsedLine === ""){
                 parsedLine = " "
             }
-
-            
 
             splitLines[index] = this.createLine(parsedLine)
 

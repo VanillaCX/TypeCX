@@ -1,6 +1,7 @@
 import { Cursor } from "../Cursor/index.js";
 import { Document } from "../Document/index.js";
 import { HTMLDoc } from "../HTMLDoc/index.js";
+import { JSDoc } from "../JSDoc/index.js";
 
 class Editor {
     constructor({doc = "New Document", editor, modals, predictiveList, mimetype = "html"} = {}){
@@ -16,6 +17,7 @@ class Editor {
         this.editor.addEventListener("keydown", this.onKeyDown);
         this.editor.addEventListener("keyup", this.onKeyUp);
         this.editor.addEventListener("paste", this.onPaste);
+        this.editor.addEventListener("copy", this.onCopy);
         this.editor.addEventListener("cut", this.onCut);
         this.editor.addEventListener("mouseover", this.onMouseOver);
         this.editor.addEventListener("mouseout", this.onMouseOut);
@@ -296,9 +298,9 @@ class Editor {
             case "html":
                 docObj = new HTMLDoc(doc)
                 break;
-            case "htmlV2":
-                    docObj = new HTMLDocV2(doc)
-                    break;
+            case "js":
+                docObj = new JSDoc(doc)
+                break;
             default:
                 docObj = new Document(doc);
                 break
@@ -316,14 +318,19 @@ class Editor {
         }
     }
 
+    onCopy = (e) => {
+        e.preventDefault();
+        let pastedtext = this.cursor.range.toString();
+
+        e.clipboardData.setData('text/html', pastedtext);
+        e.clipboardData.setData('text/plain', pastedtext);
+    }
+
     onPaste = (e) => {
         e.preventDefault();
         const pastedtext = e.clipboardData.getData("text/plain")
-
+        this.setData("ignoreRefreshLine", true)
         this.paste(pastedtext);
-
-        
-
     }
 
     refreshLine(){
@@ -356,10 +363,8 @@ class Editor {
         this.predictiveList.style.left = `${lineBox.left}px`;
 
         
-        //console.log("target.getBoundingClientRect():", target.getBoundingClientRect())
         // Ask doc if it has any suggestion matches...
         const suggestions = this.doc.predictions.getSuggestions(type, value)
-        console.log("suggestions:", suggestions)
         if(suggestions.length > 0){
             // Register element to be updated should user click on a suggestion
             this.setData("currentPredictionTarget", line);
@@ -374,6 +379,7 @@ class Editor {
 
                 target.textContent = value;
                 this.cursor.moveToEnd(target)
+                this.refreshLine()
             }
         } else {
             this.predictiveList.clear()
@@ -383,17 +389,21 @@ class Editor {
     }
 
     onKeyUp = (e) => {
-        const key = e.key;
-        const altKey = e.altKey;
-        const ctrlKey = e.ctrlKey;
-        const metaKey = e.metaKey;
-        const shiftKey = e.shiftKey;
+        const previousLineContent = this.getData("previousLineContent");
+        const newLineContent = this.activeLine.textContent;
+        const lineHasBeenUpdated = previousLineContent !== this.activeLine.textContent;
+        const ignoreRefreshLine = this.getData("ignoreRefreshLine");
 
-        const refreshBlackListKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Control', 'Alt', 'Meta', 'Shift', 'CapsLock', 'Tab', 'Escape', 'Enter', 'Home', 'End', 'PageUp', 'PageDown', 'ContextMenu', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12']
+        console.log("ignoreRefreshLine:", ignoreRefreshLine)
 
-        if(refreshBlackListKeys.includes(key)){
-        } else {
-            this.refreshLine()
+        if(lineHasBeenUpdated && this.cursor.isCollapsed){
+
+            if(ignoreRefreshLine){
+                this.setData("ignoreRefreshLine", false)
+            } else {
+                this.refreshLine()
+            }
+
 
             const predictiveInput = this.closestPredictiveInput();
 
@@ -406,9 +416,8 @@ class Editor {
 
         
 
-
+        this.setData("previousLineContent", this.activeLine.textContent)
         
-
     }
 
     highlightActiveLine(activeLine = this.activeLine){
@@ -590,46 +599,74 @@ class Editor {
         }
 
         
+
+        
     }
 
-    paste(plaintext, offset = 0) {
-        const linesToPaste = this.doc.splitLines(plaintext);
-        const leftOfCursor = this.leftOfCursor;
-        const rightOfCursor = this.rightOfCursor;
-        const absoluteCursorStart = leftOfCursor.length;
-        const lengthLastPastedLine = linesToPaste[linesToPaste.length -1].length;
+    replaceActiveLine(lines){
 
-        // Add text left of cursor to begining of first line to insert
-        linesToPaste[0] = leftOfCursor + linesToPaste[0];
+    }
 
-        // Add text right of cursor to end of last line to insert
-        linesToPaste[linesToPaste.length -1] += rightOfCursor;
+    pasteIntoDoc(newLines, activeLine){
+        // Find position of active line in the doc
+        const index = this.doc.lines.findIndex((line) => line === activeLine);
 
+        // Replace active line with new lines
+        this.doc.lines.splice(index, 1, ...newLines)
+
+    }
+
+    pasteIntoView(parsedLines, cursorPosition = 0){
         // Remove any selected lines
         this.deleteSelectedLines()
 
-        // Calculate position of where caret should be placed after paste
-        const moveCaretTo = (linesToPaste.length === 1)
-            ? absoluteCursorStart + lengthLastPastedLine
-            : lengthLastPastedLine
+        // Should NOT display ALL lines. Need to implememnt lazy loading
+        this.activeLine.replaceWith(...parsedLines)
 
-        const parsedLinesToPaste = this.doc.parse(linesToPaste)
+        // Move pointer to after insertion point
+        this.moveToAbsolute(parsedLines[parsedLines.length - 1], cursorPosition)
 
-        // Find index of active line in the document object
-        const pasteAtIndex = this.doc.lines.findIndex((line) => line === this.activeLine)
-
-        // Remove active line and insert newly pasted lines
-        this.doc.lines.splice(pasteAtIndex, 1, ...parsedLinesToPaste);
-
-        // Update Editor
-        this.activeLine.replaceWith(...parsedLinesToPaste)
-
-        // Move cursor into position in the last pasted line
-        this.moveToAbsolute(parsedLinesToPaste[parsedLinesToPaste.length - 1], moveCaretTo + offset)
-
+        // Highlight active line
         this.highlightActiveLine()
+    }
+
+    paste(plaintext, offset = 0){
+        if(plaintext === ""){
+            console.log("JUST PARSE")
+        } else {
+            console.log("PASTE", plaintext)
+        }
+        // Split plaintext into lines (\n)
+        const lines = this.doc.splitLines(plaintext);
+        const lastLineLength = lines[lines.length - 1].length;
+
+        const leftOfCursor = this.leftOfCursor;
+        const rightOfCursor = this.rightOfCursor;
+
+        const cursorPosition = (lines.length === 1)
+            ? leftOfCursor.length + lastLineLength + offset
+            : lastLineLength + offset;
+
+        // Insert text left of cursor at begining of first line
+        lines[0] = leftOfCursor + lines[0];
+
+        // Add text right of cursor to end of last line
+        lines[lines.length - 1] += rightOfCursor
+
+        // Parse lines
+        const parsedLines = this.doc.parse(lines);
+
+        // Insert lines into doc
+        this.pasteIntoDoc(parsedLines, this.activeLine);
+
+        // Update view
+        this.pasteIntoView(parsedLines, cursorPosition)
 
     }
+
+    
+
+   
 
     replaceLine(plaintext, {moveCaretTo = 0} = {}){
         const linesToPaste = this.doc.splitLines(plaintext);

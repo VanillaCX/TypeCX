@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            margin: 0;
+            display: grid;
+            grid-template-areas: "truth edit preview";
+            grid-template-columns: 33vw 34vw 33vw;
+        }
+
+        #edit {
+            grid-area: edit;
+            position: relative;
+            background-color: burlywood;
+        }
+
+        #truth {
+            grid-area: truth;
+            background-color: grey;
+            color: white
+        }
+
+        #preview {
+            grid-area: preview;
+            height: 100%;
+            width: 100%;
+            border: 0;
+        }
+
+        #edit,
+        #truth {
+            font-family: monospace;
+            font-size: 1.25em;
+            font-weight: 400;
+        }
+
+
+
+        
+        
+        </style>
+
+        <style>
+            .html-bracket-left {
+                color: grey;
+            }
+
+            .html-bracket-right {
+                color: grey;
+                
+            }
+
+            .html-back-slash {
+                color: grey;
+            }
+
+            .html-nodename {
+                color: blue;
+            }
+
+            .html-attr-name {
+                color: lightgreen;
+            }
+
+            .html-attr-quote-open {
+                color: grey;
+            }
+
+            .html-attr-value {
+                color: darkgreen;
+            }
+
+            .html-attr-quote-close {
+                color: grey;
+            }
+
+            .html-text {
+                
+            }
+
+            .html-newline:before {
+                content: " ";
+                background-color: black;
+            }
+
+            
+
+            .html-equal-sign {
+                color: grey;
+            }
+
+            .html-spacer {
+                
+            }
+
+        </style>
+
+</head>
+<body>
+    <div id="edit" contenteditable="plaintext-only" spellcheck="false"></div>
+    <textarea id="truth">
+<html>
+    <head>
+        <title>My Page</title>
+
+        <style>
+            h1 {
+                background-color: red;
+            }
+        </style>
+    </head>
+    <body>
+        <h1 class="header">My Page</h1>
+        <h2>Welcome <span id="name"></span></h2>
+        <div>
+            Before
+            <div>Inside</div>
+            After
+        </div>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Eos iste maxime debitis alias suscipit voluptates! Ipsum libero accusamus beatae dolore iste labore! Corporis, voluptate quam! Soluta repellendus et dolorem modi?</p>
+    </body>
+    <script>
+        let counter = 0;
+        counter ++;
+        const name = "Lee";
+        const nameSpan = document.getElementById("name");
+
+        nameSpan.innerHTML = name + " " + counter;
+
+        const myObject = {
+            name: "Lee",
+            age: 45
+        };
+
+        const tester = (10 < 100);
+
+        const test = `Hello there ${name}`;
+
+        // Comment here
+
+        /**
+         * Miltiline
+         * 
+         **/
+    </script>
+</html>
+    </textarea>
+    <iframe id="preview"></iframe>
+
+    <script>
+
+        const createFragmentFromString = (htmlString) => {
+            const range = document.createRange();
+            const docFragment = range.createContextualFragment(htmlString);
+            
+            return docFragment;
+        }
+        
+        const edit = document.getElementById("edit")
+        const truth = document.getElementById("truth")
+        const preview = document.getElementById("preview")
+
+        const previewWindow = preview.contentWindow;
+
+
+        const wrap = (plaintext, classes, {key, value} = {}) => {
+            const wrapper = document.createElement("span")
+            wrapper.classList.add(...classes)
+
+            if(key && value){
+                wrapper.dataset[key] = value;
+            }
+            const textNode = document.createTextNode(plaintext);
+
+            wrapper.append(textNode);
+
+            return wrapper
+        }
+
+        const spacer = (length) => {
+            return " ".repeat(length)
+        }
+
+        const patterns = [
+            {
+                mimetype: "css",
+                name: "selectors",
+                re: /(?<cssSpacer> *)(?<selector>[\w:> ()-]+)(?= {|,)/g,
+                replacerFn: ({cssSpacer, selector} = {}) => {
+                    let html = wrap(" ".repeat(cssSpacer.length), ["css-spacer"]).outerHTML;
+                    html += wrap(selector, ["css-selector"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_properties",
+                re: /(?<cssProperty>[\w-]+)(?= *:)/g,
+                replacerFn: ({cssProperty} = {}) => {
+                    let html = wrap(cssProperty, ["css-property"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_values",
+                re:  /(?<cssValue>[^:]+)(?= *;)/g,
+                replacerFn: ({cssValue} = {}) => {
+                    let html = wrap(cssValue, ["css-value"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_curly_open",
+                re:  /(?<curlyBraceOpen>{)/g,
+                replacerFn: ({curlyBraceOpen} = {}) => {
+                    let html = wrap(curlyBraceOpen, ["css-curly-open"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_curly_close",
+                re: /(?<curlyBraceClose>})/g,
+                replacerFn: ({curlyBraceClose} = {}) => {
+                    let html = wrap(curlyBraceClose, ["css-curly-close"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "colon",
+                re:  /(?<colon>:)/g,
+                replacerFn: ({colon} = {}, parser) => {
+                    let html = wrap(colon, ["css-colon"]).outerHTML;
+
+                    return html
+
+                }
+            },{
+                mimetype: "css",
+                name: "semiColon",
+                re:  /(?<semiColon>;)/g,
+                replacerFn: ({semiColon} = {}, parser) => {
+                    let html = wrap(semiColon, ["css-semi-colon"]).outerHTML;
+
+                    return html
+
+                }
+            },{
+                mimetype: "js",
+                name: "multilineComments",
+                re: /(?<multilineComments>\/\*[\s\S]*?\*\/)/g,
+                replacerFn: ({multilineComments} = {}) => {
+                    let html = multilineComments
+                                    .split("\n")
+                                    .map((line) => wrap(line, ["js-multiline-comment"]).outerHTML)
+                                    .join("\n")
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "singleLineComment",
+                re: /(?<singleLineComment>\/\/.*)/g,
+                replacerFn: ({singleLineComment} = {}) => {
+                    let html = wrap(singleLineComment, ["js-comment"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "stringLiteral",
+                re: /`(?<stringLiteral>[\s\S]*?)`/g,
+                replacerFn: ({stringLiteral} = {}) => {
+                    const variableRe = /\${ *(?<variable>[\w.\[\]"']*) *}/g;
+
+                    let html = wrap("`", ["js-backtick"]).outerHTML;
+
+                    html += wrap(stringLiteral, ["js-literal-value"]).outerHTML;
+                    html += wrap("`", ["js-backtick"]).outerHTML;
+
+                    html = html.replace(variableRe, (match, variable) => {
+                        let _html = wrap("$", ["js-literal-dollar"]).outerHTML;
+                        _html += wrap("{", ["js-literal-curly-open"]).outerHTML;
+                        _html += wrap(variable, ["js-literal-variable"]).outerHTML;
+                        _html += wrap("}", ["js-literal-curly-close"]).outerHTML;
+
+                        return _html;
+                    })
+
+
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "string",
+                re: /(?<string>((?<=')(?:[^'].*)(?='))|(?<=\")(?:[^\"].*)(?=\"))/g,
+                replacerFn: ({string} = {}) => {
+                    let html = wrap(string, ["js-string"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsonProperty",
+                re: /(?!")(?<jsonProp>[\w]+(?="* *:))/g,
+                replacerFn: ({jsonProp} = {}) => {
+                    let html = wrap(jsonProp, ["json-prop"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsProperty",
+                re: /(?<jsProperty>#{0,1}[\w]+)(?= *=)/g,
+                replacerFn: ({jsProperty} = {}) => {
+                    let html = wrap(jsProperty, ["js-property"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "methodName",
+                re: /(?<methodName>#{0,1}[\w]+ *\()/g,
+                replacerFn: ({methodName} = {}) => {
+                    let html = wrap(methodName, ["js-method-name"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "symbol",
+                re: /(?<symbol>=>|[\(\);'\"={}:,<])/g,
+                replacerFn: ({symbol} = {}) => {
+                    let html = wrap(symbol, ["js-symbol"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "keyword",
+                re: /(?<keyword>\bconst|let|var|static|class\b)/g,
+                replacerFn: ({keyword} = {}) => {
+                    let html = wrap(keyword, ["js-keyword", `js-keyword-${keyword}`]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "path",
+                re: /(?<path>[\w]+\.)/g,
+                replacerFn: ({path} = {}) => {
+                    let html = wrap(path, ["js-path"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsVariable",
+                re: /(?<jsVariable>#{0,1}[\w]+)/g,
+                replacerFn: ({jsVariable} = {}) => {
+                    const className = (jsVariable.charAt(0) === "#")
+                        ? "js-private-variable"
+                        : "js-variable"
+
+                    let html = wrap(jsVariable, [className]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "nodename",
+                re: /(?<=<)(?<opentag>[\w-]+)|(?<=\/)(?<closetag>[\w-]+)/g,
+                replacerFn: ({opentag, closetag} = {}) => {
+                    const nodename = opentag||closetag;
+                    const classes = (opentag)
+                        ? ["html-opening-tag"]
+                        : ["html-closing-tag"]
+                    
+
+                    const options = {key: "nodeNameId", value: createUUID()}
+                    
+                    classes.push("html-nodename")
+
+                    let html = wrap(nodename, classes, options).outerHTML
+
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "attributes",
+                re: /(?!<[^<]* )(?<attrName>[\w\-]*)(?<spacer_1> *)=(?<spacer_2> *)(?:(?:(?<quoteType>["'])(?<stringValue>[\/\w.,= \-]*)\k<quoteType>)|(?<value>[\w\-.]+))/g,
+                replacerFn: ({attrName, spacer_1, spacer_2, quoteType, stringValue, value} = {}) => {
+                    let html = wrap(attrName, ["html-attr-name"]).outerHTML;
+
+                    html += wrap(spacer_1, ["html-spacer"]).outerHTML
+                    html += wrap("=", ["html-equal-sign"]).outerHTML
+                    html += wrap(spacer_2, ["html-spacer"]).outerHTML
+
+                    if(quoteType){
+                        html += wrap(quoteType, ["html-attr-quote-open"]).outerHTML
+                    }
+
+                    html += wrap(stringValue||value, ["html-attr-value"]).outerHTML
+
+                    if(quoteType){
+                        html += wrap(quoteType, ["html-attr-quote-close"]).outerHTML
+                    }
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "brackets",
+                re: /(?<selfClosingBracket>\/>)|(?<closeTagLeftBracket><\/)(?=[\w]+>)|(?<openTagLeftBracket><)(?=[\w-]+)|(?!<[\s\S]*?)(?<rightBracket>>)/g,
+                replacerFn: ({selfClosingBracket, closeTagLeftBracket, openTagLeftBracket, rightBracket} = {}) => {
+                    let html = "";
+
+                    if(openTagLeftBracket){
+                        html += wrap("<", ["html-bracket-left"]).outerHTML
+                    } else if(closeTagLeftBracket){
+                        html += wrap("<", ["html-bracket-right"]).outerHTML
+                        html += wrap("/", ["html-back-slash"]).outerHTML
+
+                    } else if(rightBracket){
+                        html += wrap(">", ["html-bracket-right"]).outerHTML
+
+                    } else if(selfClosingBracket){
+                        html += wrap("/", ["html-back-slash"]).outerHTML
+                        html += wrap(">", ["html-bracket-right"]).outerHTML
+
+                    }
+                    return html
+                }
+            }
+
+        ]
+
+        const cachedPatterns = {}
+
+        const createUUID = ({prefix = "", removeDashes = false} = {}) => {
+            let randomUUID = crypto.randomUUID();
+
+            if(removeDashes){
+                randomUUID.replace("-", "");
+            }
+
+            return `${prefix}${randomUUID}`
+        }
+
+        const getPatternsByMimetype = (mimetype) => {
+            const replacerFunctions = {};
+            let regularExpressions = [];
+
+            patterns
+                .filter(pattern => pattern.mimetype === mimetype)
+                .forEach((pattern, index) => {
+                    const uuid = `__PATTERN__${mimetype.toUpperCase()}_${index}`;
+                    const re = `(?<${uuid}>${pattern.re.source})`;
+
+                    replacerFunctions[uuid] = pattern.replacerFn;
+                    regularExpressions.push(re);
+                })
+            
+            return cachedPatterns[mimetype] = {
+                re: new RegExp(regularExpressions.join("|"), "g"),
+                replacerFunctions
+            } 
+        }
+
+        const splitToLines = (plaintext, mimetype) => {
+            return plaintext
+                .split("\n")
+                .map(line => {
+                    if(line.startsWith("{{{")){
+                        return line
+                    }
+
+                    if(line.trim().length === 0){
+                        line = " "
+                    }
+
+                    const docFrag = createFragmentFromString(line);
+                    const wrapper = document.createElement("div")
+                    wrapper.setAttribute("data-mimetype", mimetype)
+                    wrapper.classList.add("editor-line")
+
+                    wrapper.append(...docFrag.childNodes)
+
+                    return wrapper.outerHTML
+                })
+                .join("")
+        }
+
+        const mimetypeTagMap = {
+            "style": "css",
+            "script": "js",
+        }
+
+        const parse = (plaintext, mimetype) => {
+            const blocksRe = /(?<=<(?<blocktype>script|style)[\w\-=" ]*>)(?<content>[\w\W]*?)(?=<\/\k<blocktype>>)/g;
+            const blocks = [];
+
+            plaintext = plaintext.replace(blocksRe, (match, blockType, content) => {
+                const uuid = crypto.randomUUID();
+                let placeholder = `\n{{{${uuid}}}}\n`
+                blocks.push({
+                    uuid,
+                    blockType,
+                    content
+                })
+
+                return placeholder
+            })
+            
+            const {re, replacerFunctions} = cachedPatterns[mimetype] || getPatternsByMimetype(mimetype);
+
+            plaintext = plaintext.replace(re, (match, ...args) => {
+                const groups = args[args.length - 1];
+                const groupsAsArray = Array.from(Object.entries(groups));
+
+                const [uuid] = groupsAsArray.find(([group, value]) => group.startsWith(`__PATTERN__${mimetype.toUpperCase()}_`) && value);
+
+                const html = replacerFunctions[uuid](groups)
+
+                return html
+            })
+
+
+            let parsedLines = splitToLines(plaintext, mimetype);
+            
+            // Cant do a replace on doc. Need to search for the placeholder in the array of lines
+            blocks.forEach((block) => {
+                const mimetype = mimetypeTagMap[block.blockType];
+
+                const {re, replacerFunctions} = cachedPatterns[mimetype] || getPatternsByMimetype(mimetype);
+
+                if(Object.keys(replacerFunctions).length > 0){
+                    
+                    const blockDoc = block.content.replace(re, (match, ...args) => {
+                        const groups = args[args.length - 1];
+                        const groupsAsArray = Array.from(Object.entries(groups));
+
+                        const [uuid] = groupsAsArray.find(([group, value]) => group.startsWith(`__PATTERN__${mimetype.toUpperCase()}_`) && value);
+
+                        const html = replacerFunctions[uuid](groups)
+
+                        return html
+                    })
+
+                    const lines = splitToLines(blockDoc, mimetype)
+
+                    parsedLines = parsedLines.replace(`{{{${block.uuid}}}}`, lines)
+                }
+
+                
+            })
+
+            return parsedLines
+
+        }
+
+        
+        const selection = window.getSelection();
+
+        let parsed = parse(truth.value, "html")
+
+        edit.innerHTML = parsed;
+
+
+        const updatePreview = (node) => {
+            const plaintext = node.textContent;
+            // Convert Edit text content into doc fragment and put in iframe
+            const domParser = new DOMParser();
+            const doc = domParser.parseFromString(plaintext, "text/html")
+
+            const scripts = doc.querySelectorAll("script");
+
+            const newScripts = Array.from(scripts).map(script => {
+                const scriptElement = document.createElement("script")
+                const scriptText = document.createTextNode(`
+                    (function() {
+                    try {
+                        ${script.textContent}
+                    } catch(error) {
+                        console.error('Error in user code:', error);
+                    }
+                })();`)
+
+                scriptElement.append(scriptText);
+                script.remove()
+
+                return scriptElement;
+            })
+
+            
+            preview.contentWindow.document.firstChild.replaceWith(doc.firstChild);
+
+
+
+            // Add event listeners to preview
+            const previewBody = preview.contentWindow.document.querySelector("body");
+            previewBody.append(...newScripts)
+
+            
+            // Add event listeners to edit
+            edit.addEventListener("keyup", (event) => {
+                //console.log("EDIT: keyup", event.target)
+            })
+
+            edit.addEventListener("keydown", (event) => {
+                //console.log("EDIT: keydown", event.target)
+                const shiftKey = event.shiftKey
+                const key = event.key;
+                const anchorNode = selection.anchorNode;
+                const line = getLine(anchorNode)
+            
+
+                if(key === "Tab"){
+                    event.preventDefault();
+                    console.log("line:", line)
+                    if(shiftKey){
+                        console.log("Tab Left")
+                    } else {
+                        console.log("Insert tab")
+                    }
+                }
+            })
+        }
+
+
+        updatePreview(edit)
+
+        const getLine = (node) => {
+            const line = (node.classList && node.classList.contains("editor-line"))
+                    ? node
+                    : node.parentNode.closest(".editor-line");
+            
+            return line
+        }
+
+        const getCaretPosition = () => {
+            const anchorNode = selection.anchorNode;
+            const anchorOffset = selection.anchorOffset;
+            const line = getLine(anchorNode);
+            let caretPosition = anchorOffset;
+            const treeWalk = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+
+            while(treeWalk.nextNode()) {
+                if(treeWalk.currentNode === anchorNode){
+                    // Found the node, stop counting
+                    break;
+                }
+
+                caretPosition += treeWalk.currentNode.textContent.length
+            }
+
+            return {
+                anchorNode,
+                anchorOffset,
+                caretPosition,
+                line
+            }
+        }
+
+        const setCaretPosition = ({line, caretPosition} = {}) => {
+            const treeWalk = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            let counter = 0;
+            let targetNode = null;
+
+            while(treeWalk.nextNode()) {
+                if(counter + treeWalk.currentNode.textContent.length >= caretPosition){
+                    targetNode = treeWalk.currentNode;
+                    caretPosition = caretPosition - counter
+                    break;
+                }
+
+                counter += treeWalk.currentNode.textContent.length
+            }
+
+            if(targetNode === null){
+                targetNode = line.nextSibling.firstChild
+                caretPosition = 0
+            }
+
+            if(targetNode){
+                selection.setPosition(targetNode, caretPosition)
+
+            }
+        }
+
+        const updateEditor = (node) => {
+            let {caretPosition, anchorNode, anchorOffset} = getCaretPosition();
+            const line = getLine(node)
+
+            const mimetype = line.getAttribute("data-mimetype")
+
+            const plaintext = line.textContent;
+            const parsedText = parse(plaintext, mimetype);
+            const docFrag = createFragmentFromString(parsedText);
+            const newLineStart = docFrag.firstChild
+            line.replaceWith(...docFrag.childNodes)
+
+            setCaretPosition({line: newLineStart, caretPosition});
+
+        }
+
+        
+
+        const observer = new MutationObserver((records, observer) => {
+            const uniqueRecords = records.filter((record, index, self) => record.target.isConnected)
+            const firstRecord = uniqueRecords[0].target;
+
+            updateEditor(firstRecord);
+            updatePreview(edit)
+        });
+
+        const observerConfig = { childList: false, subtree: true, characterData: true, characterDataOldValue: true, attributes: false };
+        observer.observe(edit, observerConfig);
+        
+
+    </script>
+
+</body>
+</html>

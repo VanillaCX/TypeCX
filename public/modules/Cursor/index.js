@@ -6,6 +6,8 @@ class Cursor {
     }
 
     get selectedText(){
+        console.log("GET SELECTED TEXT")
+        
         return this.selection.toString();
     }
 

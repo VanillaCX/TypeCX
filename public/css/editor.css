@@ -4,11 +4,26 @@
     suffix: ": ";
 }
 
+.editor[data-mimetype="html"]:before {
+    content: "HTML";
+    background-color: black;
+    color:white;
+    text-transform: uppercase;
+}
+
+.editor[data-mimetype="js"]:before {
+    content: "JavaScript";
+    background-color: black;
+    color:white;
+    text-transform: uppercase;
+}
+
 .editor {
     background-color: cornsilk;
     margin: 0;
     list-style: lines;
     cursor: default;
+    margin-bottom: 20px;
 }
 
 .editor > li {
@@ -69,4 +84,204 @@
 
 #predictive-list {
     position: absolute;
+}
+
+
+
+[data-type="quote-open"] {
+    background-color: green;
+    color: white;
+}
+
+[data-type="quote-close"] {
+    background-color: lightgreen;
+    color: green;
+}
+
+[data-type="string"] {
+    background-color: lightpink;
+    color: black;
+}
+
+/* KEYWORD: CLASS */
+[data-type="keyword-class"] {
+    background-color: purple;
+    color: white;
+}
+
+[data-type="class-name"] {
+    background-color: mediumslateblue;
+    color: white;
+}
+
+/* KEYWORD: CONST */
+[data-type="keyword-const"] {
+    background-color: blue;
+    color: white;
+}
+
+[data-type="const-name"] {
+    background-color: lightblue;
+    color: black;
+}
+
+
+/* KEYWORD: LET */
+[data-type="keyword-let"] {
+    background-color: rgb(131, 131, 0);
+    color: black;
+}
+
+[data-type="let-name"] {
+    background-color: yellow;
+    color: black;
+}
+
+/* KEYWORD: VAR */
+[data-type="keyword-var"] {
+    background-color: darkred;
+    color: white;
+}
+
+[data-type="var-name"] {
+    background-color: lightcoral;
+    color: black;
+}
+
+/* KEYWORD: FUNCTION */
+[data-type="keyword-function"] {
+    background-color: burlywood;
+    color: black;
+}
+
+[data-type="function-name"] {
+    background-color: darkorange;
+    color: white;
+}
+
+/* CLASSES */
+[data-type="class-static-prefix"] {
+    background-color: pink;
+    color: black;
+}
+
+[data-type="class-private-prefix"] {
+    background-color: red;
+    color: white;
+}
+
+/* METHOD */
+[data-type="class-method"] {
+    background-color: rgb(255, 0, 0);
+    color: black;
+}
+
+[data-type="class-static-method"] {
+    background-color: rgb(200, 0, 0);
+    color: white;
+}
+
+[data-type="class-private-method"] {
+    background-color: rgb(150, 0, 0);
+    color: white;
+}
+
+[data-type="class-static-private-method"] {
+    background-color: rgb(100, 0, 0);
+    color: white;
+}
+
+/* ARROW METHOD */
+[data-type="class-arrowmethod"] {
+    background-color: rgb(255, 150, 0);
+    color: black;
+}
+
+[data-type="class-static-arrowmethod"] {
+    background-color: rgb(200, 150, 0);
+    color: black;
+}
+
+[data-type="class-private-arrowmethod"] {
+    background-color: rgb(150, 150, 0);
+    color: black;
+}
+
+[data-type="class-static-private-arrowmethod"] {
+    background-color: rgb(100, 150, 0);
+    color: black;
+}
+
+/* PROPERTY */
+[data-type="class-property"] {
+    background-color: rgb(255, 150, 250);
+    color: black;
+}
+
+[data-type="class-static-property"] {
+    background-color: rgb(200, 150, 250);
+    color: black;
+}
+
+[data-type="class-private-property"] {
+    background-color: rgb(150, 150, 250);
+    color: black;
+}
+
+[data-type="class-static-private-property"] {
+    background-color: rgb(100, 150, 250);
+    color: black;
+}
+
+/* DECLARATION */
+[data-type="class-declaration"] {
+    background-color: black;
+    color: white;
+}
+
+[data-type="class-static-declaration"] {
+    background-color: rgb(51, 51, 51);
+    color: white;
+}
+
+[data-type="class-private-declaration"] {
+    background-color: rgb(100, 100, 100);
+    color: black;
+}
+
+[data-type="class-static-private-declaration"] {
+    background-color: rgb(150, 150, 150);
+    color: black;
+}
+
+
+/* OBJECT PATHS */
+[data-type="path-object"] {
+    background-color: purple;
+    color: white;
+}
+
+[data-type="path-property"] {
+    background-color: pink;
+    color: black;
+}
+
+
+/* VARIABLE */
+[data-type="variable"] {
+    background-color: pink;
+    color: red;
+}
+
+
+
+/* OPERATORS */
+[data-type="operator-equals"] {
+    background-color: purple;
+    color: yellow;
+}
+
+[data-type="operator-colon"] {
+    background-color: yellow;
+    color: purple;
 }

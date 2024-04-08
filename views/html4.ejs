@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        /* JSON */
+        .json-prop {
+            background-color: yellow;
+            color: black;
+        }
+
+        /* JS */
+        .js-multi-line-comments {
+            background-color: grey;
+            color: black;
+        }
+
+        .js-single-line-comment {
+            background-color: lightgrey;
+            color: black;
+        }
+
+        .js-string {
+            background-color: red;
+            color: white;
+        }
+
+        
+
+        .js-property {
+            background-color: orange;
+            color: black;
+        }
+
+        .js-method {
+            background-color: green;
+            color: black;
+        }
+
+        .js-symbol {
+            background-color: orchid;
+            color: red;
+        }
+
+        .js-keyword {
+            background-color: black;
+            color: white;
+        }
+
+        .js-path {
+            background-color: brown;
+            color: white;
+        }
+
+        .js-variable {
+            background-color: purple;
+            color: black;
+        }
+
+        /* HTML */
+
+        .html-attr-name {
+            background-color: aqua;
+            color: black;
+        }
+
+        .html-attr-value {
+            background-color: aquamarine;
+            color: black;
+        }
+
+        .html-tag-name {
+            background-color: blue;
+            color: black;
+        }
+
+        .html-doctype-tag {
+            background-color: blueviolet;
+            color: black;
+        }
+
+        .html-doctype-value {
+            background-color: lightblue;
+            color: black;
+        }
+
+        .html-doctype-legacy {
+            background-color: lightcoral;
+            color: black;
+        }
+
+        .html-comments-opentag {
+            background-color: lightseagreen;
+            color: black;
+        }
+
+        .html-html-comments {
+            background-color: darkmagenta;
+            color: white;
+        }
+
+        .html-comments-closetag {
+            background-color: darkred;
+            color: white;
+        }
+
+        /* COMMON */
+
+        .equal-sign {
+            background-color: darkcyan;
+            color: white;
+        }
+
+        .back-slash {
+            background-color: darkgoldenrod;
+            color: white;
+        }
+
+        .angle-bracket-open {
+            background-color: darkgreen;
+            color: white;
+        }
+
+        .angle-bracket-close {
+            background-color: darkkhaki;
+            color: white;
+        }
+
+        .exclamation-mark {
+            background-color: darkgray;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div id="editor" contenteditable="plaintext-only"></div>
+
+    <script>
+
+        const doc = `<!DOCTYPE html ddsd>
+<html>
+    <head>
+        <title>Lees test page</title>
+    </head>
+<style>
+    .this.should.be.exluded {
+        
+    }
+</style>
+<script>
+    const name = "lee";
+// single line comment
+const name = "";
+const name = 'lee';
+const name = 'ds';
+const name = '';
+const one = two
+const name = {f = de
+}
+one : "two";
+}
+const myfunction = (test, two = "three") => {}
+var string = "Hello"
+
+function myFunction({message}){
+}
+
+function myFunction(message, one, two = "hello"){
+}
+variable.return.
+/* 
+ multiline comments
+*/
+
+const test="this is a const test"
+
+ // this is a comment const
+
+function myFunction(message,message,message){
+}
+
+const result = myFunction({message: "Hello"})
+
+const myFunctionclass = () => {}
+let myFunction = () => {}
+var myFunction = () => {}
+
+
+class Speaker = {
+    hey;
+    #private = "lee"
+    #privateMethod(){}
+    static myVar = "Hello"
+    static method = (e) = {
+}
+    constructor({test = "one",name = "Default", output} = {}){
+        this.name = name;
+        this.output = output;
+    }
+
+    constructor({test = one, name = "Default", output} = {}){
+        this.name = name;
+        this.output = output;
+    }
+
+    saySomething(plaintext, one = "one", two = two){
+        this.output.innerHTML = plaintext
+    }
+}
+
+const userInput = docum.ent.get.const.Elemen.class.tById.hey("userInput")
+const output = document.getElementById("voice")
+const button = document.getElementById("button")
+
+const speaker = new Speaker({
+    name: "Yo Yo",
+    output: output,
+    test: {}
+})
+
+button.addEventListener("click", (e) => {
+    const message = userInput.value;
+
+    speaker.saySomething(message)
+})
+<\/script>
+    <body>
+        <!-- SINGLE LINE COMMENTS -->
+        
+         <!-- MULTI
+            LINE 
+            COMMENTS 
+        -->
+
+<!-- SINGLE LINE  COMMENTS 
+        
+         MULTI 
+            LINE 
+            COMMENTS 
+        -->
+        <header>
+            <h1>Page title</h1>
+        </header>
+        <main>
+            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex amet tempore voluptas cupiditate minima, voluptatem blanditiis impedit magnam qui debitis facilis veniam culpa, accusantium quisquam? Consectetur incidunt quis eligendi accusantium!</p>
+            <form method="post">
+                <input type="text" placeholder="Email Address" />
+                <button type="submit">Go</button>
+            </form>
+        </main>
+    </body>
+</html>
+`;
+
+
+
+        const editorWindow = document.getElementById("editor");
+
+        const lists = {
+            "JSKeywords": ["const", "var", "let", "static", "class"]
+        }
+
+        const listHelper = (id, joiner) => {
+            return lists[id].join(joiner)
+        }
+
+        const JSPatterns = [
+            {
+                "mimetype": "js",
+                "name": "multilineComments",
+                "regexp": "(?<multilineComments>\\/\\*[\\s\\S]*?\\*\\/)",
+                "replacer": ({multilineComments} = {}) => { return Components.createHighlight(multilineComments, ["js-multi-line-comments"]) }
+            },{
+                "mimetype": "js",
+                "name": "singleLineComment",
+                "regexp": "(?<singleLineComment>\/\/.*)",
+                "replacer": ({singleLineComment} = {}) => { return Components.createHighlight(singleLineComment, ["js-single-line-comment"]) }
+            },{
+                "mimetype": "js",
+                "name": "string",
+                "regexp": "(?<string>((?<=')(?:[^'].*)(?='))|(?<=\")(?:[^\"].*)(?=\"))",
+                "replacer": ({string} = {}) => { return Components.createHighlight(string, ["js-string"]) }
+            },{
+                "mimetype": "js",
+                "name": "jsonProperty",
+                "regexp": "(?<jsonProp>[\\w]+(?= *:))",
+                "replacer": ({jsonProp} = {}) => { return Components.createHighlight(jsonProp, ["json-prop"]) }
+            },{
+                "mimetype": "js",
+                "name": "property",
+                "regexp": "(?<property>#{0,1}[\\w]+)(?= *=)",
+                "replacer": ({property} = {}) => { return Components.createHighlight(property, ["js-property"]) }
+            },{
+                "mimetype": "js",
+                "name": "method",
+                "regexp": "(?<method>#{0,1}[\\w]+ *\\()",
+                "replacer": ({method} = {}) => { return Components.createHighlight(method, ["js-method"]) }
+            },{
+                "mimetype": "js",
+                "name": "symbol",
+                "regexp": "(?<symbol>=>|[\(\);'\"={}:,])",
+                "replacer": ({symbol} = {}) => { return Components.createHighlight(symbol, ["js-symbol"]) }
+            },{
+                "mimetype": "js",
+                "name": "keyword",
+                "regexp": `(?<keyword>\\b${listHelper("JSKeywords", "\\b|\\b")}\\b)`,
+                "replacer": ({keyword} = {}) => { return Components.createHighlight(keyword, ["js-keyword"]) }
+            },{
+                "mimetype": "js",
+                "name": "path",
+                "regexp": "(?<path>[\\w]+\\.)",
+                "replacer": ({path} = {}) => { return Components.createHighlight(path, ["js-path"]) }
+            },{
+                "mimetype": "js",
+                "name": "variable",
+                "regexp": "(?<variable>[\\w]+)",
+                "replacer": ({variable} = {}) => { return Components.createHighlight(variable, ["js-variable"]) }
+            }
+        ]
+
+        const HTMLPatterns = [
+                {
+                    "mimetype": "html",
+                    "name": "css",
+                    "regexp": "(?<=<style>)(?<css>[\\s\\S]*?)(?=<\/style>)",
+                    "replacer": ({css} = {}, parser) => { 
+                        /*let html = "{{{{TYPE:BLOCK:CSS}}}}"
+                        html += parser.parse(css, "js")
+                        html += "{{{{TYPE:BLOCK:HTML}}}}"
+
+                        return html;*/
+                        return css;
+                    }
+                },{
+                    "mimetype": "html",
+                    "name": "js",
+                    "regexp": "(?<=<script>)(?<js>[\\s\\S]*?)(?=<\/script>)",
+                    "replacer": ({js} = {}, parser) => { 
+                        let html = "{{TYPE:BLOCK:JS}}"
+                        const JSParsed = parser.parse(js, "js");
+                        html += JSParsed
+                        html += "{{/TYPE:BLOCK:JS}}"
+                        console.group("JSParsed:")
+                        console.log(JSParsed)
+                        console.groupEnd();
+                        return html;
+                    }
+                },{
+                    "mimetype": "html",
+                    "name": "attributes",
+                    "regexp": "(?<=<[^>]*)(?<attrName>[\\w-]+) *= *(?<attrValue>\"[^\"]*\"|'[^']*'|[^ ]*)",
+                    "replacer": ({attrName, attrValue} = {}) => {
+                        let html = Components.createHighlight(attrName, ["html-attr-name"]);
+                        html += Components.equalSign();
+                        html += Components.createHighlight(attrValue, ["html-attr-value"]);
+
+                        return html
+                    }
+                },{
+                    "mimetype": "html",
+                    "name": "tagnames",
+                    "regexp": "(?<tagName>(?<isOpeningTag>(?<=<)[\\w-]+)|(?<isClosingTag>(?<=<\\/)[\\w-]+))",
+                    "replacer": ({tagName, isOpeningTag, isClosingTag} = {}) => { 
+                        const classNames = ["html-tag-name", `html-${tagName}-tag`];
+
+                        if(isClosingTag){
+                            classNames.push("closing-tag")
+                        } else if (isOpeningTag){
+                            classNames.push("opening-tag")
+                        }
+
+                        return Components.createHighlight(tagName, classNames)
+                    }
+                },{
+                    "mimetype": "html",
+                    "name": "doctype",
+                    "regexp": "(?<docType><!DOCTYPE *html *(?<legacyDoctypeString>.+){0,1}>)",
+                    "replacer": ({docType, legacyDoctypeString} = {}) => { 
+                        let html = Components.angleBracketOpen();
+                        html += Components.exclamationMark()
+                        html += Components.createHighlight("DOCTYPE", ["html-doctype-tag"])
+                        html += Components.space()
+                        html += Components.createHighlight("html", ["html-doctype-value"])
+                        html += Components.space()
+                        html += Components.createHighlight(legacyDoctypeString, ["html-doctype-legacy"])
+                        html += Components.angleBracketClose()
+                        
+                        return html
+                    }
+                },{
+                    "mimetype": "html",
+                    "name": "comments",
+                    "regexp": "((?<commentOpen><!--))(?<comments>[\\s\\S]*?)((?<commentClose>-->))",
+                    "replacer": ({commentOpen, comments, commentClose} = {}) => { 
+                        let html = Components.createHighlight("<!--", ["html-comments-opentag"]);
+                        html += Components.createHighlight(comments, ["html-comments"]);
+                        html += Components.createHighlight("-->", ["html-comments-closetag"]);
+                        
+                        return html
+                    }
+                },{
+                    "mimetype": "html",
+                    "name": "closingTagLeftBracket",
+                    "regexp": "(?<closingTagLeftBracket><\\/)",
+                    "replacer": ({closingTagLeftBracket} = {}) => { 
+                        let html = Components.angleBracketOpen();
+                        html += Components.backSlash();;
+
+                        return html
+                    }
+                },{
+                    "mimetype": "html",
+                    "name": "openingTagLeftBracket",
+                    "regexp": "(?<openingTagLeftBracket><)",
+                    "replacer": ({openingTagLeftBracket} = {}) => { return Components.angleBracketOpen() }
+                },{
+                    "mimetype": "html",
+                    "name": "selfClosingTagRightBracket",
+                    "regexp": "(?<selfClosingTagRightBracket>\\/>)",
+                    "replacer": ({selfClosingTagRightBracket} = {}) => { 
+                        let html = Components.backSlash();
+                        html += Components.angleBracketClose();
+
+                        return html
+                     }
+                },{
+                    "mimetype": "html",
+                    "name": "tagRightBracket",
+                    "regexp": "(?<tagRightBracket>>)",
+                    "replacer": ({tagRightBracket} = {}) => { return Components.angleBracketClose()}
+                }
+            ]
+
+
+        class Pattern {
+            #regexp;
+            #replacer;
+
+            constructor({mimetype, name, regexp, replacer} = {}, uuid = crypto.randomUUID()){
+                this.mimetype = mimetype;
+                this.name = name;
+                this.#regexp = regexp;
+                this.id = `_PATTERN_${uuid}`
+
+                this.#replacer = replacer;
+            }
+
+            replace(...args){
+                return this.#replacer(...args)
+            }
+
+            toString () {
+                return `(?<${this.id}>${this.#regexp})`
+            }
+
+            toRegExp(flags = "g"){
+                return new RegExp(this.toString(), flags)
+            }
+
+          
+        }
+
+        class Components {
+            constructor(){
+
+            }
+
+            static createHighlight(plaintext, classNames, tag = "span") {
+                const wrapper = document.createElement(tag);
+                wrapper.classList.add(...classNames);
+
+                const textNode = document.createTextNode(plaintext);
+
+                wrapper.append(textNode);
+
+                return wrapper.outerHTML
+            }
+
+            static wrapLine(line) {
+                const wrapper = document.createElement("div")
+                wrapper.classList.add("line")
+
+                wrapper.innerHTML = line;
+                return wrapper.outerHTML
+            }
+
+            static equalSign(){
+                return this.createHighlight("=", ["equal-sign"])
+            }
+
+            static backSlash(){
+                return this.createHighlight("/", ["back-slash"])
+            }
+
+            static angleBracketOpen(){
+                return this.createHighlight("<", ["angle-bracket-open"])
+            }
+
+            static angleBracketClose(){
+                return this.createHighlight(">", ["angle-bracket-close"])
+            }
+
+            static exclamationMark(){
+                return this.createHighlight("!", ["exclamation-mark"])
+            }
+
+            static space(length = 1){
+                const textNode = document.createTextNode(" ".repeat(length))
+                return textNode.textContent;
+            }
+        }
+
+        class Parser {
+            constructor(patterns){
+                // Create an array of new Patterns
+                this.patterns = patterns.map((pattern, uuid) => new Pattern(pattern, uuid));
+
+                // Build list of mimetypes
+                this.mimetypes = [...new Set(this.patterns.map(pattern => pattern.mimetype))];
+
+                this.components = new Components()
+            }
+
+            RegExp(mimetype, flags = "g"){ // Need to cache this (possibly)
+                // Get a list of regular expressions from patterns that match specified mimetype
+                const filteredByMimetype = this.patterns.filter(pattern => pattern.mimetype === mimetype);
+                const arrayRegularExpressions = filteredByMimetype.map((pattern) => {
+                    if (pattern.mimetype === mimetype) {
+                        return pattern.toString()
+                    }
+                });
+
+                // Convert regular expressions to a string, seperated by the logical OR sign
+                const stringRegularExpressions = arrayRegularExpressions.join("|");
+
+                // Create the actual Regular Expression with specified flags, defaulting to "g"
+                const regExp = new RegExp(stringRegularExpressions, flags)
+                
+                return regExp;
+ 
+            }
+
+            
+            getPatternById(id){
+                // Find a pattern by its ID
+                return this.patterns.find((pattern) => pattern.id === id)
+            }
+
+            parse(doc, mimetype){
+                // Create a regular expression including all patterns that match mimetype
+                const re = this.RegExp(mimetype);
+
+                // Apply replace on the document with the Regular Expression.
+                doc = doc.replace(re, (match, ...args) => {
+                    if(match.length === 0){
+                        return ""
+                    }
+                    // Not possible to use named variables directly as the quantity / order changes depending
+                    //    on which mimetype is specified. So, find the group at the end of the arg list. 
+                    const groups = args[args.length-1];
+
+                    // Convert to array for easier searching
+                    const groupsAsArray = Array.from(Object.entries(groups));
+
+                    // Find the ID of the pattern whose regular expression triggered the match.
+                    const [id] = groupsAsArray.find(([groupName, value]) => groupName.startsWith("_PATTERN_") && value)
+
+                    // Get the pattern and call its parser method, passing the captured groups
+                    const pattern = this.getPatternById(id)
+                    const replacedMatch = pattern.replace(groups, this);
+
+                    // Update the doc
+                    return replacedMatch;
+
+                })
+
+                // Return the fully parsed document to caller
+                return doc;
+            }
+
+            
+
+            parseLine(line, mimetype){
+                const parsedLine = this.parse(line, mimetype);
+
+                const wrappedLine = Components.wrapLine(parsedLine);
+
+                return wrappedLine
+            }
+
+        }
+
+        class Doc {
+            constructor(plaintext, patterns){
+                this.plaintext = plaintext;
+                this.lines = this.splitLines(plaintext)
+                this.parser = new Parser(patterns);
+
+
+            }
+
+            splitLines(plaintext){
+                return plaintext.split("\n")
+            }
+
+            createLine(markup){
+                const wrapper = document.createElement("div")
+                wrapper.classList.add("line")
+                wrapper.innerHTML = markup;
+
+                return wrapper.outerHTML;
+            }
+
+            createBlock(lines, mimetype){
+                const wrapper = document.createElement("div")
+                wrapper.classList.add(`mimetype-${mimetype}`)
+
+                wrapper.innerHTML = lines;
+
+                return wrapper.outerHTML;
+
+            }
+
+            parse(){
+                let parsedHTML = this.parser.parse(this.plaintext, "html");
+                console.log(parsedHTML)
+                const re = /{{TYPE:BLOCK:(?<blockType>[\w]+)}}(?<content>[\s\S]*?){{\/TYPE:BLOCK:\k<blockType>}}/g;
+
+                parsedHTML = parsedHTML.replace(re, (match, blockType, content) => {
+                    const splitLines = content.split("\n")
+
+                    const lines = splitLines.map((line) => this.createLine(line))
+
+                    const block = this.createBlock(lines.join(""), blockType)
+
+                    return block
+                })
+
+                return parsedHTML
+            }
+
+          
+
+            parseLines(){
+                const parsedLines = this.lines.map((line) => this.parser.parseLine(line, "html"));
+                return parsedLines.join("");
+            }
+        }
+
+        class Editor {
+            constructor({view, doc} = {}){
+                this.view = view;
+                this.doc = doc;
+
+                this.view.addEventListener("keyup", this.onKeyUp)
+                this.view.addEventListener("keydown", this.onKeyDown)
+
+                this.view.innerHTML = this.doc.parse()
+            }
+
+            onKeyUp = (e) => {
+                console.log("Key Up")
+            }
+
+            onKeyDown = (e) => {
+                console.log("Key Down")
+                console.log(this.doc.lines)
+            }
+        }
+
+        const editor = new Editor({
+            view: document.getElementById("editor"),
+            doc: new Doc(doc, [...HTMLPatterns, ...JSPatterns])
+        })
+
+       
+        
+        ;
+
+        /*editorWindow.addEventListener("keyup", (event) => {
+            const docValue = editorWindow.textContent;
+            console.log(docValue)
+
+            const parsed = parser.parse(docValue, "html")
+            editorWindow.innerHTML = parsed;
+        })*/
+
+
+    </script>
+</body>
+</html>

@@ -34,6 +34,12 @@ class Document {
         });
     }
 
+    createTextNode(plaintext) {
+        const textNode = document.createTextNode(plaintext);
+
+        return textNode
+    }
+    
     createWrapper(plaintext, type, predictive = false) {
         const wrapper = document.createElement("div")
         wrapper.setAttribute("data-type", "wrapper")
