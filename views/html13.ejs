@@ -19,7 +19,6 @@
         #edit {
             grid-area: edit;
             position: relative;
-            background-color: burlywood;
         }
 
         #truth {
@@ -43,69 +42,189 @@
         }
 
 
-
         
         
         </style>
 
+
         <style>
-            .html-bracket-left {
-                color: grey;
+            @counter-style lines {
+                system: numeric;
+                symbols: "0" "1" "2" "3" "4" "5" "6" "7" "8" "9";
+                suffix: ": ";
             }
 
-            .html-bracket-right {
-                color: grey;
+            .editor-view {
+                list-style: lines;
+                margin: 0;
+                background-color: rgb(37, 37, 37);
                 
             }
 
-            .html-back-slash {
-                color: grey;
+            .editor-line:hover {
+                background-color: rgb(65, 65, 65);
             }
 
-            .html-nodename {
-                color: blue;
+            .editor-line:focus {
+                background-color: red;
             }
 
-            .html-attr-name {
-                color: lightgreen;
-            }
-
-            .html-attr-quote-open {
-                color: grey;
-            }
-
-            .html-attr-value {
-                color: darkgreen;
-            }
-
-            .html-attr-quote-close {
-                color: grey;
-            }
-
-            .html-text {
-                
-            }
-
-            .html-newline:before {
-                content: " ";
-                background-color: black;
+            .editor-line[data-mimetype="css"]::marker {
+                color: green;
             }
 
             
 
-            .html-equal-sign {
-                color: grey;
+            .editor-line[data-mimetype="html"]::marker {
+                color: blue;
             }
 
-            .html-spacer {
-                
+            .editor-line[data-mimetype="js"]::marker {
+                color: yellow;
             }
-
         </style>
+
+        
+<style>
+    .css-multiline-comment,
+    .css-comment {
+        color: green;
+    }
+    .css-spacer {}
+    .css-property {
+        color: aqua;
+    }
+    .css-value {
+        color: coral;
+    }
+    .css-curly-open,
+    .css-curly-close {
+        color: yellow;
+    }
+    .css-colon {}
+    .css-semi-colon {}
+    .css-selector {
+        color: orange;
+    }
+</style>
+
+<style>
+    .js-multiline-comment,
+    .js-comment {
+        color: green;
+    }
+    .js-backtick {}
+    .js-literal-value {}
+    .js-literal-dollar {}
+    .js-literal-curly-open {}
+    .js-literal-variable {}
+    .js-literal-curly-close {}
+    .js-string {
+        color: coral;
+
+    }
+    .js-property {
+        color: aqua;
+
+    }
+
+    .js-private-property {
+        color: darkcyan;
+
+    }
+    .js-method-name {
+        color:yellow
+    }
+    .js-symbol {}
+    .js-quote {
+        color: coral;
+    }
+    .js-keyword {
+        color:rgb(7, 156, 255)
+    }
+    .js-keyword-const {}
+    .js-keyword-let {}
+    .js-keyword-var {}
+    .js-keyword-static {}
+    .js-keyword-class {}
+    .js-path {
+        color: aqua;
+    }
+    .js-private-variable {}
+    .js-variable {
+        color: aqua;
+    }
+
+    .js-bracket-open,
+    .js-bracket-close,
+    .js-square-bracket-open,
+    .js-square-bracket-close,
+    .js-curly-brace-open,
+    .js-curly-brace-close {
+        color: yellow;
+    }
+</style>
+
+<style>
+    .json-prop {}
+</style>
+
+<style>
+    .editor-view[data-show-whitespace="true"] .css-spacer,
+    .editor-view[data-show-whitespace="true"] .html-spacer, 
+    .editor-view[data-show-whitespace="true"] .editor-indent,
+    .editor-view[data-show-whitespace="true"] .editor-spaces {
+        background: url(/media/icons/circle.svg) repeat-x;
+        background-size: 0.55em;
+        background-position-y: center;
+    }
+
+    .editor-view[data-show-whitespace="true"] .editor-line-feed::before {
+        background: url(/media/icons/linefeed.svg) repeat-x;
+        background-size: 0.55em;
+        background-position-y: center;
+        content: " "
+    }
+
+
+    .editor-line[data-mimetype="html"] {
+        color: white;
+    }
+    
+    .html-nodename {
+        color:rgb(7, 156, 255)
+    }
+    
+    .html-equal-sign {
+        color: white
+    }
+    .html-attr-quote-open,
+    .html-attr-quote-close {
+        color: lightcoral
+    }
+    .html-attr-name {
+        color: aqua;
+    }
+    .html-attr-value {
+        color: coral;
+    }
+    .html-bracket-left,
+    .html-bracket-right,
+    .html-back-slash {
+        color: grey
+    }
+
+    .html-lineIndent {
+        background: url(/media/icons/space.png) repeat-x;
+        background-size: 0.55em;
+        background-position-y: center;
+    }
+    
+</style>
 
 </head>
 <body>
-    <div id="edit" contenteditable="plaintext-only" spellcheck="false"></div>
+    <ul data-show-whitespace="false" class="editor-view" id="edit" contenteditable="plaintext-only" spellcheck="false"></ul>
     <textarea id="truth">
 <html>
     <head>
@@ -115,6 +234,11 @@
             h1 {
                 background-color: red;
             }
+
+            /* Multiline comments
+            here */
+
+            /* single line */
         </style>
     </head>
     <body>
@@ -135,10 +259,27 @@
 
         nameSpan.innerHTML = name + " " + counter;
 
+        const test2 = document.getElementById("id";)
+
         const myObject = {
             name: "Lee",
             age: 45
         };
+
+        class Brother {
+            #name = "Lee";
+            age = 45;
+
+            constructor({name = "Default", age=45} ={}){
+
+            }
+
+            sayHello(message){
+                console.log("message:", message)
+            }
+        }
+
+        const myArray = ["one"];
 
         const tester = (10 < 100);
 
@@ -191,6 +332,17 @@
 
         const patterns = [
             {
+                mimetype: "css",
+                name: "multilineComments",
+                re: /(?<multilineComments>\/\*[\s\S]*?\*\/)/g,
+                replacerFn: ({multilineComments} = {}) => {
+                    let html = multilineComments
+                                    .split("\n")
+                                    .map((line) => wrap(line, ["css-multiline-comment"]).outerHTML)
+                                    .join("\n")
+                    return html
+                }
+            },{
                 mimetype: "css",
                 name: "selectors",
                 re: /(?<cssSpacer> *)(?<selector>[\w:> ()-]+)(?= {|,)/g,
@@ -315,13 +467,17 @@
                 name: "jsProperty",
                 re: /(?<jsProperty>#{0,1}[\w]+)(?= *=)/g,
                 replacerFn: ({jsProperty} = {}) => {
-                    let html = wrap(jsProperty, ["js-property"]).outerHTML;
+                    const className = (jsProperty.charAt(0) === "#")
+                        ? "js-private-property"
+                        : "js-property"
+
+                    let html = wrap(jsProperty, [className]).outerHTML;
                     return html
                 }
             },{
                 mimetype: "js",
                 name: "methodName",
-                re: /(?<methodName>#{0,1}[\w]+ *\()/g,
+                re: /(?<methodName>#{0,1}[\w]+ *)(?=\()/g,
                 replacerFn: ({methodName} = {}) => {
                     let html = wrap(methodName, ["js-method-name"]).outerHTML;
                     return html
@@ -329,9 +485,65 @@
             },{
                 mimetype: "js",
                 name: "symbol",
-                re: /(?<symbol>=>|[\(\);'\"={}:,<])/g,
+                re: /(?<symbol>=>|[;=:,<])/g,
                 replacerFn: ({symbol} = {}) => {
                     let html = wrap(symbol, ["js-symbol"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "openingCurlyBrace",
+                re: /(?<openingCurlyBrace>{)/g,
+                replacerFn: ({openingCurlyBrace} = {}) => {
+                    let html = wrap("{", ["js-curly-brace-open"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "closingCurlyBrace",
+                re: /(?<closingCurlyBrace>})/g,
+                replacerFn: ({closingCurlyBrace} = {}) => {
+                    let html = wrap("}", ["js-curly-brace-close"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "openingBracket",
+                re: /(?<openingBracket>\()/g,
+                replacerFn: ({openingBracket} = {}) => {
+                    let html = wrap("(", ["js-bracket-open"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "closingBracket",
+                re: /(?<closingBracket>\))/g,
+                replacerFn: ({closingBracket} = {}) => {
+                    let html = wrap(")", ["js-bracket-close"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "openingSquareBracket",
+                re: /(?<openingSquareBracket>\[)/g,
+                replacerFn: ({openingSquareBracket} = {}) => {
+                    let html = wrap("[", ["js-square-bracket-open"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "closingSquareBracket",
+                re: /(?<closingSquareBracket>\])/g,
+                replacerFn: ({closingSquareBracket} = {}) => {
+                    let html = wrap("]", ["js-square-bracket-close"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsQuotes",
+                re: /(?<jsQuote>['\"])/g,
+                replacerFn: ({jsQuote} = {}) => {
+                    let html = wrap(jsQuote, ["js-quote"]).outerHTML;
                     return html
                 }
             },{
@@ -426,6 +638,29 @@
                     }
                     return html
                 }
+            },{
+                mimetype: "all",
+                name: "whitespaces",
+                re: /(?<lineIndent>^[ ]+)|(?<spaces>[ ]+)|(?<newLine>\n)/g,
+                replacerFn: ({lineIndent, spaces, newLine} = {}) => {
+                    let classes = ["editor-whitespace"];
+                    let textContent = "";
+
+                    if(lineIndent){
+                        textContent = " ".repeat(lineIndent.length);
+                        classes.push("editor-indent")
+                    } else if(spaces){
+                        textContent = " ".repeat(spaces.length);
+                        classes.push("editor-spaces")
+                    } else if(newLine){
+                        textContent = "\n";
+                        classes.push("editor-line-feed")
+                    }
+
+                    let html = wrap(textContent, classes).outerHTML
+
+                    return html
+                }
             }
 
         ]
@@ -447,7 +682,7 @@
             let regularExpressions = [];
 
             patterns
-                .filter(pattern => pattern.mimetype === mimetype)
+                .filter(pattern => pattern.mimetype === mimetype || pattern.mimetype === "all")
                 .forEach((pattern, index) => {
                     const uuid = `__PATTERN__${mimetype.toUpperCase()}_${index}`;
                     const re = `(?<${uuid}>${pattern.re.source})`;
@@ -475,7 +710,7 @@
                     }
 
                     const docFrag = createFragmentFromString(line);
-                    const wrapper = document.createElement("div")
+                    const wrapper = document.createElement("li")
                     wrapper.setAttribute("data-mimetype", mimetype)
                     wrapper.classList.add("editor-line")
 
@@ -549,6 +784,8 @@
 
                 
             })
+
+           
 
             return parsedLines
 
