@@ -50,4 +50,24 @@ const html_editor13 = (req, res, next) => {
     res.render("html13")
 }
 
-module.exports = {html_editor, html_editor2, html_editor3, html_editor4, html_editor5, html_editor6, html_editor7, html_editor8, html_editor9, html_editor10, html_editor11, html_editor12, html_editor13}
+const html_editor14 = (req, res, next) => {
+    res.render("html14")
+}
+
+const undo_redo1 = (req, res, next) => {
+    res.render("undo_redo1")
+}
+
+const undo_redo2 = (req, res, next) => {
+    res.render("undo_redo2")
+}
+
+const undo_redo3 = (req, res, next) => {
+    res.render("undo_redo3")
+}
+
+const undo_redo4 = (req, res, next) => {
+    res.render("undo_redo4")
+}
+
+module.exports = {html_editor, html_editor2, html_editor3, html_editor4, html_editor5, html_editor6, html_editor7, html_editor8, html_editor9, html_editor10, html_editor11, html_editor12, html_editor13, html_editor14, undo_redo1, undo_redo2, undo_redo3, undo_redo4}

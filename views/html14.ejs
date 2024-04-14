@@ -12,8 +12,8 @@
         body {
             margin: 0;
             display: grid;
-            grid-template-areas: "truth edit preview";
-            grid-template-columns: 33vw 34vw 33vw;
+            grid-template-areas: "edit preview";
+            grid-template-columns: 1fr 1fr;
         }
 
         #edit {
@@ -24,7 +24,8 @@
         #truth {
             grid-area: truth;
             background-color: grey;
-            color: white
+            color: white;
+            display: none;
         }
 
         #preview {
@@ -113,12 +114,22 @@
     .js-comment {
         color: green;
     }
-    .js-backtick {}
-    .js-literal-value {}
-    .js-literal-dollar {}
-    .js-literal-curly-open {}
-    .js-literal-variable {}
-    .js-literal-curly-close {}
+    .js-backtick {
+        color: coral;
+    }
+    .js-literal-value {
+        color: coral;
+    }
+    .js-literal-dollar,
+    .js-literal-curly-open,
+    .js-literal-curly-close {
+        color:rgb(7, 156, 255)
+    }
+    
+    .js-literal-variable {
+        color: aqua;
+    }
+
     .js-string {
         color: coral;
 
@@ -135,7 +146,9 @@
     .js-method-name {
         color:yellow
     }
-    .js-symbol {}
+    .js-symbol {
+        color: white;
+    }
     .js-quote {
         color: coral;
     }
@@ -166,7 +179,9 @@
 </style>
 
 <style>
-    .json-prop {}
+    .json-prop {
+        color: aqua;
+    }
 </style>
 
 <style>
@@ -179,7 +194,7 @@
         background-position-y: center;
     }
 
-    .editor-view[data-show-whitespace="true"] .editor-line-feed::before {
+    .editor-view[data-show-whitespace="true"] .editor-line::after {
         background: url(/media/icons/linefeed.svg) repeat-x;
         background-size: 0.55em;
         background-position-y: center;
@@ -485,7 +500,7 @@
             },{
                 mimetype: "js",
                 name: "symbol",
-                re: /(?<symbol>=>|[;=:,<])/g,
+                re: /(?<symbol>=>|[;=:,<+-])/g,
                 replacerFn: ({symbol} = {}) => {
                     let html = wrap(symbol, ["js-symbol"]).outerHTML;
                     return html
@@ -641,7 +656,7 @@
             },{
                 mimetype: "all",
                 name: "whitespaces",
-                re: /(?<lineIndent>^[ ]+)|(?<spaces>[ ]+)|(?<newLine>\n)/g,
+                re: /(?<lineIndent>^[ ]+)|(?<spaces>[ ]+)/g,
                 replacerFn: ({lineIndent, spaces, newLine} = {}) => {
                     let classes = ["editor-whitespace"];
                     let textContent = "";
@@ -652,10 +667,7 @@
                     } else if(spaces){
                         textContent = " ".repeat(spaces.length);
                         classes.push("editor-spaces")
-                    } else if(newLine){
-                        textContent = "\n";
-                        classes.push("editor-line-feed")
-                    }
+                    } 
 
                     let html = wrap(textContent, classes).outerHTML
 
@@ -701,7 +713,9 @@
             return plaintext
                 .split("\n")
                 .map(line => {
+                    console.log("line:", line)
                     if(line.startsWith("{{{")){
+                        console.log("&&&&&&&&&&&&&&&&&&&")
                         return line
                     }
 

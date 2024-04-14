@@ -12,8 +12,8 @@
         body {
             margin: 0;
             display: grid;
-            grid-template-areas: "truth edit preview";
-            grid-template-columns: 33vw 34vw 33vw;
+            grid-template-areas: "edit preview";
+            grid-template-columns: 50vw 50vw;
         }
 
         #edit {
@@ -21,10 +21,13 @@
             position: relative;
         }
 
+      
+
         #truth {
             grid-area: truth;
             background-color: grey;
-            color: white
+            color: white;
+            display: none;
         }
 
         #preview {
@@ -39,6 +42,10 @@
             font-family: monospace;
             font-size: 1.25em;
             font-weight: 400;
+        }
+
+        .hidden{
+            display: none;;
         }
 
 
@@ -113,12 +120,22 @@
     .js-comment {
         color: green;
     }
-    .js-backtick {}
-    .js-literal-value {}
-    .js-literal-dollar {}
-    .js-literal-curly-open {}
-    .js-literal-variable {}
-    .js-literal-curly-close {}
+    .js-backtick {
+        color: coral;
+    }
+    .js-literal-value {
+        color: coral;
+    }
+    .js-literal-dollar,
+    .js-literal-curly-open,
+    .js-literal-curly-close {
+        color:rgb(7, 156, 255)
+    }
+    
+    .js-literal-variable {
+        color: aqua;
+    }
+
     .js-string {
         color: coral;
 
@@ -135,7 +152,9 @@
     .js-method-name {
         color:yellow
     }
-    .js-symbol {}
+    .js-symbol {
+        color: white;
+    }
     .js-quote {
         color: coral;
     }
@@ -166,7 +185,9 @@
 </style>
 
 <style>
-    .json-prop {}
+    .json-prop {
+        color: aqua;
+    }
 </style>
 
 <style>
@@ -179,7 +200,7 @@
         background-position-y: center;
     }
 
-    .editor-view[data-show-whitespace="true"] .editor-line-feed::before {
+    .editor-view[data-show-whitespace="true"] .editor-line::after {
         background: url(/media/icons/linefeed.svg) repeat-x;
         background-size: 0.55em;
         background-position-y: center;
@@ -308,6 +329,75 @@
         const edit = document.getElementById("edit")
         const truth = document.getElementById("truth")
         const preview = document.getElementById("preview")
+
+        // Add event listeners to edit
+        edit.addEventListener("keyup", (event) => {
+            //console.log("EDIT: keyup", event.target)
+        })
+
+        edit.addEventListener("keydown", (event) => {
+            //console.log("EDIT: keydown", event.target)
+            const shiftKey = event.shiftKey
+            const ctrlKey = event.ctrlKey;
+            const key = event.key;
+            const anchorNode = selection.anchorNode;
+            const line = getLine(anchorNode)
+        
+
+            if(key === "Tab"){
+                event.preventDefault();
+                console.log("line:", line)
+                if(shiftKey){
+                    console.log("Tab Left")
+                } else {
+                    console.log("Insert tab")
+                }
+            }
+
+
+            if(ctrlKey && key.toLowerCase() === "z"){
+                console.group("GET HISTORY")
+                console.log("history:", history)
+                console.log("redo:", redo)
+                console.groupEnd();
+
+                event.preventDefault();
+                if(shiftKey){
+                    // REDO
+                    const redoState = redo.pop();
+                    history.push(redoState)
+
+                    if(redoState) {
+                        stopObserving();
+
+                        let parsed = parse(redoState, "html")
+                        edit.innerHTML = parsed
+
+                        startObserving();
+                    } else {
+                        console.log("NO REDO.")
+                    }
+                } else {
+                    // UNDO
+                    const previousState = history.pop()
+                    redo.push(previousState);
+
+                    if(previousState){
+                        stopObserving();
+
+                        let parsed = parse(previousState, "html")
+                        edit.innerHTML = parsed
+
+                        startObserving();
+
+                    } else {
+                        console.log("NO UNDO.")
+                    }
+                }
+
+                
+            }
+        })
 
         const previewWindow = preview.contentWindow;
 
@@ -485,7 +575,7 @@
             },{
                 mimetype: "js",
                 name: "symbol",
-                re: /(?<symbol>=>|[;=:,<])/g,
+                re: /(?<symbol>=>|[;=:,<+-])/g,
                 replacerFn: ({symbol} = {}) => {
                     let html = wrap(symbol, ["js-symbol"]).outerHTML;
                     return html
@@ -641,21 +731,10 @@
             },{
                 mimetype: "all",
                 name: "whitespaces",
-                re: /(?<lineIndent>^[ ]+)|(?<spaces>[ ]+)|(?<newLine>\n)/g,
-                replacerFn: ({lineIndent, spaces, newLine} = {}) => {
-                    let classes = ["editor-whitespace"];
-                    let textContent = "";
-
-                    if(lineIndent){
-                        textContent = " ".repeat(lineIndent.length);
-                        classes.push("editor-indent")
-                    } else if(spaces){
-                        textContent = " ".repeat(spaces.length);
-                        classes.push("editor-spaces")
-                    } else if(newLine){
-                        textContent = "\n";
-                        classes.push("editor-line-feed")
-                    }
+                re: /(?<lineIndent>^[ ]+)/g,
+                replacerFn: ({lineIndent} = {}) => {
+                    let classes = ["editor-whitespace", "editor-indent"];
+                    let textContent = " ".repeat(lineIndent.length);
 
                     let html = wrap(textContent, classes).outerHTML
 
@@ -708,7 +787,6 @@
                     if(line.trim().length === 0){
                         line = " "
                     }
-
                     const docFrag = createFragmentFromString(line);
                     const wrapper = document.createElement("li")
                     wrapper.setAttribute("data-mimetype", mimetype)
@@ -834,29 +912,7 @@
             previewBody.append(...newScripts)
 
             
-            // Add event listeners to edit
-            edit.addEventListener("keyup", (event) => {
-                //console.log("EDIT: keyup", event.target)
-            })
-
-            edit.addEventListener("keydown", (event) => {
-                //console.log("EDIT: keydown", event.target)
-                const shiftKey = event.shiftKey
-                const key = event.key;
-                const anchorNode = selection.anchorNode;
-                const line = getLine(anchorNode)
             
-
-                if(key === "Tab"){
-                    event.preventDefault();
-                    console.log("line:", line)
-                    if(shiftKey){
-                        console.log("Tab Left")
-                    } else {
-                        console.log("Insert tab")
-                    }
-                }
-            })
         }
 
 
@@ -930,24 +986,60 @@
             const parsedText = parse(plaintext, mimetype);
             const docFrag = createFragmentFromString(parsedText);
             const newLineStart = docFrag.firstChild
+
             line.replaceWith(...docFrag.childNodes)
+
+
 
             setCaretPosition({line: newLineStart, caretPosition});
 
         }
 
-        
+        let history = [];
+        let redo = [];
+
 
         const observer = new MutationObserver((records, observer) => {
-            const uniqueRecords = records.filter((record, index, self) => record.target.isConnected)
-            const firstRecord = uniqueRecords[0].target;
 
-            updateEditor(firstRecord);
-            updatePreview(edit)
+            if(records.length === 1 && records[0].addedNodes.length > 0){
+                
+
+            } else {
+                const uniqueRecords = records.filter((record, index, self) => record.target.isConnected)
+                const firstRecord = uniqueRecords[0].target;
+
+                updateEditor(firstRecord);
+                updatePreview(edit)
+
+                const lines = Array.from(edit.querySelectorAll("li"));
+                const historyEntry = lines
+                                        .map(line => line.textContent)
+                                        .join("\n");
+
+                history.push(historyEntry)
+                redo = []
+
+                console.group("SET HISTORY")
+                console.log("history:", history)
+                console.log("redo:", redo)
+                console.groupEnd();
+            }
+
+            
         });
 
-        const observerConfig = { childList: false, subtree: true, characterData: true, characterDataOldValue: true, attributes: false };
-        observer.observe(edit, observerConfig);
+        const startObserving = () => {
+            const observerConfig = { childList: true, subtree: true, characterData: true, characterDataOldValue: true, attributes: false };
+            observer.observe(edit, observerConfig);
+        }
+
+        const stopObserving = () => {
+            observer.disconnect();
+        }
+
+        startObserving();
+
+        
         
 
     </script>

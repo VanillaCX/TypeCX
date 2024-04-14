@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            margin: 0;
+            display: grid;
+            grid-template-areas: "edit preview";
+            grid-template-columns: 50vw 50vw;
+        }
+
+        #edit {
+            grid-area: edit;
+            position: relative;
+        }
+
+      
+
+        #truth {
+            grid-area: truth;
+            background-color: grey;
+            color: white;
+            display: none;
+        }
+
+        #preview {
+            grid-area: preview;
+            height: 100%;
+            width: 100%;
+            border: 0;
+        }
+
+        #edit,
+        #truth {
+            font-family: monospace;
+            font-size: 1.25em;
+            font-weight: 400;
+        }
+
+        .hidden{
+            display: none;;
+        }
+
+
+        
+        
+        </style>
+
+
+        <style>
+            @counter-style lines {
+                system: numeric;
+                symbols: "0" "1" "2" "3" "4" "5" "6" "7" "8" "9";
+                suffix: ": ";
+            }
+
+            .editor-view {
+                list-style: lines;
+                margin: 0;
+                background-color: rgb(37, 37, 37);
+                
+            }
+
+            .editor-line:hover {
+                background-color: rgb(65, 65, 65);
+            }
+
+            .editor-line:focus {
+                background-color: red;
+            }
+
+            .editor-line[data-mimetype="css"]::marker {
+                color: green;
+            }
+
+            
+
+            .editor-line[data-mimetype="html"]::marker {
+                color: blue;
+            }
+
+            .editor-line[data-mimetype="js"]::marker {
+                color: yellow;
+            }
+
+            .highlight {
+                background-color: green;
+            }
+
+            .highlight-error {
+                background-color: red;
+            }
+        </style>
+
+        
+<style>
+    .css-multiline-comment,
+    .css-comment {
+        color: green;
+    }
+    .css-spacer {}
+    .css-property {
+        color: aqua;
+    }
+    .css-value {
+        color: coral;
+    }
+    .css-curly-open,
+    .css-curly-close {
+        color: yellow;
+    }
+    .css-colon {}
+    .css-semi-colon {}
+    .css-selector {
+        color: orange;
+    }
+</style>
+
+<style>
+    .js-multiline-comment,
+    .js-comment {
+        color: green;
+    }
+    .js-backtick {
+        color: coral;
+    }
+    .js-literal-value {
+        color: coral;
+    }
+    .js-literal-dollar,
+    .js-literal-curly-open,
+    .js-literal-curly-close {
+        color:rgb(7, 156, 255)
+    }
+    
+    .js-literal-variable {
+        color: aqua;
+    }
+
+    .js-string {
+        color: coral;
+
+    }
+    .js-property {
+        color: aqua;
+
+    }
+
+    .js-private-property {
+        color: darkcyan;
+
+    }
+    .js-method-name {
+        color:yellow
+    }
+    .js-symbol {
+        color: white;
+    }
+    .js-quote {
+        color: coral;
+    }
+    .js-keyword {
+        color:rgb(7, 156, 255)
+    }
+    .js-keyword-const {}
+    .js-keyword-let {}
+    .js-keyword-var {}
+    .js-keyword-static {}
+    .js-keyword-class {}
+    .js-path {
+        color: aqua;
+    }
+    .js-private-variable {}
+    .js-variable {
+        color: aqua;
+    }
+
+    .js-bracket-open,
+    .js-bracket-close,
+    .js-square-bracket-open,
+    .js-square-bracket-close,
+    .js-curly-brace-open,
+    .js-curly-brace-close {
+        color: yellow;
+    }
+</style>
+
+<style>
+    .json-prop {
+        color: aqua;
+    }
+</style>
+
+<style>
+    .editor-view[data-show-whitespace="true"] .css-spacer,
+    .editor-view[data-show-whitespace="true"] .html-spacer, 
+    .editor-view[data-show-whitespace="true"] .editor-indent,
+    .editor-view[data-show-whitespace="true"] .editor-spaces {
+        background: url(/media/icons/circle.svg) repeat-x;
+        background-size: 0.55em;
+        background-position-y: center;
+    }
+
+    .editor-view[data-show-whitespace="true"] .editor-line::after {
+        background: url(/media/icons/linefeed.svg) repeat-x;
+        background-size: 0.55em;
+        background-position-y: center;
+        content: " "
+    }
+
+
+    .editor-line[data-mimetype="html"] {
+        color: white;
+    }
+    
+    .html-nodename {
+        color:rgb(7, 156, 255)
+    }
+    
+    .html-equal-sign {
+        color: white
+    }
+    .html-attr-quote-open,
+    .html-attr-quote-close {
+        color: lightcoral
+    }
+    .html-attr-name {
+        color: aqua;
+    }
+    .html-attr-value {
+        color: coral;
+    }
+    .html-bracket-left,
+    .html-bracket-right,
+    .html-back-slash {
+        color: grey
+    }
+
+    .html-lineIndent {
+        background: url(/media/icons/space.png) repeat-x;
+        background-size: 0.55em;
+        background-position-y: center;
+    }
+    
+</style>
+
+</head>
+<body>
+    <ul data-show-whitespace="false" class="editor-view" id="edit" contenteditable="plaintext-only" spellcheck="false"></ul>
+    <textarea id="truth">
+<html>
+    <head>
+        <title>My Page</title>
+
+        <style>
+            h1 {
+                background-color: red;
+            }
+
+            /* Multiline comments
+            here */
+
+            /* single line */
+        </style>
+    </head>
+    <body>
+        <h1 class="header">My Page</h1>
+        <h2>Welcome <span id="name"></span></h2>
+        <div>
+            Before
+            <div>Inside</div>
+            After
+        </div>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Eos iste maxime debitis alias suscipit voluptates! Ipsum libero accusamus beatae dolore iste labore! Corporis, voluptate quam! Soluta repellendus et dolorem modi?</p>
+    </body>
+    <script>
+        let counter = 0;
+        counter ++;
+        const name = "Lee";
+        const nameSpan = document.getElementById("name");
+
+        nameSpan.innerHTML = name + " " + counter;
+
+        const test2 = document.getElementById("id");
+
+        const myObject = {
+            name: "Lee",
+            age: 45
+        };
+
+        class Brother {
+            #name = "Lee";
+            age = 45;
+
+            constructor({name = "Default", age=45} ={}){
+
+            }
+
+            sayHello(message){
+                console.log("message:", message)
+            }
+        }
+
+        const myArray = ["one"];
+
+        const tester = (10 < 100);
+
+        const test = `Hello there ${name}`;
+
+        // Comment here
+
+        /**
+         * Miltiline
+         * 
+         **/
+    </script>
+</html>
+    </textarea>
+    <iframe id="preview"></iframe>
+
+    <script>
+
+        const getTokenAt = (line, caretPosition) => {
+            const treeWalk = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            let counter = 0;
+            let targetNode = null;
+
+            while(treeWalk.nextNode()) {
+                if(counter + treeWalk.currentNode.textContent.length >= caretPosition){
+                    targetNode = treeWalk.currentNode;
+                    break;
+                }
+
+                counter += treeWalk.currentNode.textContent.length
+            }
+            return (targetNode)
+                ? getToken(targetNode)
+                : null
+        }
+
+        const getToken = (node) => {
+            const parentNode = node.parentNode;
+            const target = (parentNode.classList.contains("token"))
+                ? parentNode
+                : null
+             
+
+            return target
+        }
+
+        const getInfo = () => {
+            const anchorNode = selection.anchorNode;
+
+            const {line, mimetype, character, token} = getCaretPosition(anchorNode);
+
+            return {
+                line,
+                mimetype,
+                character,
+                token,
+            }
+        }
+
+        
+
+        const createFragmentFromString = (htmlString) => {
+            const range = document.createRange();
+            const docFragment = range.createContextualFragment(htmlString);
+            
+            return docFragment;
+        }
+        
+        const edit = document.getElementById("edit")
+        const truth = document.getElementById("truth")
+        const preview = document.getElementById("preview")
+
+        edit.addEventListener("navigateleave", (event) => {
+            // Get action for target
+            
+
+            if(event.detail.actions){
+
+                event.detail.actions.forEach(action => {
+                    const matchingAction = actions.find(a => a.name === action.name);
+
+                    if(matchingAction){
+                        event.detail.params = action.params;
+                        matchingAction.callbacks["navigateleave"](event.detail)
+                    }
+                })
+              
+            }
+            
+        })
+
+        edit.addEventListener("navigateenter", (event) => {
+            // Get action for target
+            if(event.detail.actions){
+
+                event.detail.actions.forEach(action => {
+                    const matchingAction = actions.find(a => a.name === action.name);
+
+                    if(matchingAction){
+                        event.detail.params = action.params;
+                        matchingAction.callbacks["navigateenter"](event.detail)
+                    }
+                })
+              
+            }
+
+           
+        })
+
+        // Add event listeners to edit
+        edit.addEventListener("keyup", (event) => {
+            const key = event.key;
+            const anchorNode = selection.anchorNode;
+            //console.log("EDIT: keyup", event.target)
+            //startObserving();
+
+            switch(key){
+                case "ArrowUp":
+                case "ArrowDown":
+                case "ArrowLeft":
+                case "ArrowRight":
+                    dispatchNav()
+                    break;
+            }
+        })
+
+        let previousCaret = null
+
+        const dispatchNav = () => {
+            
+            const caret = getCaret();
+
+            if(previousCaret && previousCaret.target !== caret.target){
+                previousCaret.target.dispatchEvent(
+                    new CustomEvent("navigateleave", {
+                        bubbles: true,
+                        detail: previousCaret,
+                    })
+                )
+            }
+
+
+            caret.target.dispatchEvent(
+                new CustomEvent("navigateenter", {
+                    bubbles: true,
+                    detail: caret,
+                })
+            )
+
+            previousCaret = caret;
+
+        }
+
+        edit.addEventListener("click", (event) => {
+            dispatchNav();
+        })
+
+        edit.addEventListener("keydown", (event) => {
+            //console.log("EDIT: keydown", event.target)
+            const shiftKey = event.shiftKey
+            const ctrlKey = event.ctrlKey;
+            const key = event.key;
+            const anchorNode = selection.anchorNode;
+            const {line} = getLine(anchorNode)
+            const caret = getCaret()
+            //console.log(caret)
+
+            if(caret.token && caret.token.classList.contains("html-nodename")){
+                //console.log("Editing a nodename.")
+                //stopObserving();
+            }
+        
+            
+
+            if(key === "Tab"){
+                event.preventDefault();
+                console.log("line:", line)
+                if(shiftKey){
+                    console.log("Tab Left")
+                } else {
+                    console.log("Insert tab")
+                }
+            }
+
+
+            if(ctrlKey && key.toLowerCase() === "z"){
+                console.group("GET HISTORY")
+                console.log("history:", history)
+                console.log("redo:", redo)
+                console.groupEnd();
+
+                event.preventDefault();
+                if(shiftKey){
+                    // REDO
+                    const redoState = redo.pop();
+                    history.push(redoState)
+
+                    if(redoState) {
+                        stopObserving();
+
+                        let parsed = parse(redoState, "html")
+                        edit.innerHTML = parsed
+
+                        startObserving();
+                    } else {
+                        console.log("NO REDO.")
+                    }
+                } else {
+                    // UNDO
+                    const previousState = history.pop()
+                    redo.push(previousState);
+
+                    if(previousState){
+                        stopObserving();
+
+                        let parsed = parse(previousState, "html")
+                        edit.innerHTML = parsed
+
+                        startObserving();
+
+                    } else {
+                        console.log("NO UNDO.")
+                    }
+                }
+
+                
+            }
+        })
+
+        const previewWindow = preview.contentWindow;
+
+
+        const wrapToken = (plaintext, classes, actions = null) => {
+            const wrapper = document.createElement("span")
+            wrapper.classList.add(...classes, "token")
+
+            if(actions){
+                wrapper.dataset.actions = JSON.stringify(actions); 
+            }
+            
+            const textNode = document.createTextNode(plaintext);
+
+            wrapper.append(textNode);
+
+            return wrapper
+        }
+
+        const wrapToken2 = (plaintext, classes, {action = null, params} = {}, testing = [{test: "hello"}]) => {
+            console.log("testing:", testing)
+            const wrapper = document.createElement("span")
+            wrapper.classList.add(...classes, "token")
+
+            if(action){
+                if(params){
+                    wrapper.dataset.params = JSON.stringify(params);
+                }
+
+                wrapper.dataset.action = action;
+            }
+            const textNode = document.createTextNode(plaintext);
+
+            wrapper.append(textNode);
+
+            return wrapper
+        }
+
+        const spacer = (length) => {
+            return " ".repeat(length)
+        }
+
+
+        const parentNextSibling = (node) => {
+            const sibling = node.parentNode.nextElementSibling;
+            const firstChild = (sibling) ? sibling.firstChild : null;
+
+            return firstChild;
+        }
+
+        const parentPreviousSibling = (node) => {
+            const sibling = node.parentNode.previousElementSibling;
+            const lastChild = (sibling) ? sibling.lastChild : null;
+
+            return lastChild;
+        }
+
+        const findClosingToken = (startToken, openingTokenType, closingTokenType, closingTokenTextContent) => {
+            let walkNode = startToken.nextSibling || parentNextSibling(startToken);
+            let nest = 0;
+            let endNode = null;
+
+            while (walkNode) {
+                const classList = walkNode.classList;
+
+                if(classList){
+
+                    if(classList.contains(openingTokenType)){
+                        nest++;
+                    } else if(classList.contains(closingTokenType)){
+
+                        if(nest === 0){
+                            endNode = walkNode;
+                            break;
+                        } else {
+                            nest--;
+                        }
+
+                    }
+
+                }
+
+                walkNode = walkNode.nextSibling || parentNextSibling(walkNode);
+
+                
+            }
+
+            if(closingTokenTextContent && endNode.textContent !== closingTokenTextContent){
+                return null
+            }
+
+            return endNode
+        }
+
+        const findOpeningToken = (endToken, openingTokenType, closingTokenType, openingTokenTextContent) => {
+            let walkNode = endToken.previousSibling || parentPreviousSibling(endToken);
+            let nest = 0;
+            let startNode = null;
+
+            while (walkNode) {
+                const classList = walkNode.classList;
+
+                if(classList){
+
+                    if(classList.contains(closingTokenType)){
+                        nest++;
+                    } else if(classList.contains(openingTokenType)){
+
+                        if(nest === 0){
+                            startNode = walkNode;
+                            break;
+                        } else {
+                            nest--;
+                        }
+
+                    }
+
+                }
+
+                walkNode = walkNode.previousSibling || parentPreviousSibling(walkNode);
+                
+            }
+
+            if(openingTokenTextContent && startNode.textContent !== openingTokenTextContent){
+                return null
+            }
+
+            return startNode
+        }
+
+      
+        const attributes2 = [{
+            global: true,
+            name: "accesskey",
+            tags: {
+                "all": {
+                    type: "regexp",
+                    value: /^[^\s]$/,
+                    
+                }
+            },
+            
+            
+        },{
+            global: true,
+            name: "autocaptialize",
+            tags: {
+                "all": {
+                    type: "enum",
+                    value: ["none", "off", "on", "words", "characters"]
+                }
+            },
+        },{
+            global: true,
+            name: "lang",
+            tags: {
+                "all": {
+                    type: "regexp",
+                    value: /^(?<language>[a-z]{2,3})(?<script>-[A-Z][a-z]{3}){0,1}(?<region>-[A-Z]{2}|[0-9]{3}){0,1}$/,
+                }
+            },
+        },{
+            global: false,
+            name: "download",
+            tags: {
+                "all": {
+                    type: "regexp",
+                    value: /^[\w._/\\]*$/,
+                }
+            },
+        },{
+            global: false,
+            name: "href",
+            tags: {
+                "all": {
+                    type: "regexp",
+                    value: /^[\w:#.@]+$/,
+                }
+            },
+        },{
+            global: false,
+            name: "href",
+            tags: {
+                "all": {
+                    type: "regexp",
+                    value: /^[\w:#.@]+$/
+                }
+            },
+        },{
+            global: false,
+            name: "hreflang",
+            tags: {
+                "all": {
+                    type: "reference",
+                    value: "attribute:lang",
+                }
+            },
+        },{
+            global: false,
+            name: "rel",
+            tags: {
+                "a": {
+                    type: "enum",
+                    value: ["alternate", "author", "bookmark", "dns-prefetch", "external", "help", "licence", "me", "next", "nofollow", "noopener", "noreferrer", "opener", "prev", "privacy-policy", "search", "tag", "terms-of-service"]
+                },
+                "area": {
+                    type: "enum",
+                    value: ["alternate", "author", "bookmark", "dns-prefetch", "external", "help", "licence", "me", "next", "nofollow", "noopener", "noreferrer", "opener", "prev", "privacy-policy", "search", "tag", "terms-of-service"]
+                },
+                "link": {
+                    type: "enum",
+                    value: ["alternate", "author", "canonical", "dns-prefetch", "help", "icon", "licence", "manifest", "me", "modulepreload", "next", "pingback", "preconnect", "prefetch", "preload", "prerender", "prev", "privacy-policy", "search", "stylesheet", "terms-of-service"]
+                },
+                "form": {
+                    type: "enum",
+                    value: ["external", "help", "licence", "next", "nofollow", "noopener", "noreferrer", "opener", "prev", "search"]
+                }
+            }
+        },{
+            global: false,
+            name: "referrerpolicy",
+            tags: {
+                "all": {
+                    type: "enum",
+                    value: ["no-referrer", "no-referrer-when-downgrade", "origin", "origin-when-cross-origin", "same-origin", "strict-origin", "strict-origin-when-cross-origin", "unsafe-url"]
+                }
+            }
+            
+        },{
+            global: false,
+            name: "target",
+            tags: {
+                "all": {
+                    type: "enum",
+                    value: ["_self", "_blank", "_parent", "_top", "_self", "_unfencedTop"]
+                }
+            }
+            
+        },{
+            global: false,
+            name: "target",
+            tags: {
+                "all": {
+                    type: "regexp",
+                    value: /^[\w]+\/[\w+]+$/
+                }
+            }
+            
+        },{
+            global: false,
+            name: "charset",
+            tags: {
+                "all": {
+                    deprecated: true,
+                    type: "regexp",
+                    value: /^[\w -]+$/
+                }
+            }
+            
+        },{
+            global: false,
+            name: "coords",
+            tags: {
+                "all": {
+                    deprecated: true,
+                    type: "regexp",
+                    value: /^[0-9]+,[0-9]+,[0-9]+,[0-9]+$/
+                }
+            }
+            
+        },{
+            global: false,
+            name: "name",
+            tags: {
+                "all": {
+                    deprecated: true,
+                    type: "regexp",
+                    value: /^\w+$/
+                }
+            }
+            
+        },{
+            global: false,
+            name: "rev",
+            tags: {
+                "all": {
+                    deprecated: true,
+                    type: "reference",
+                    value: "attribute:rel"
+                }
+            }
+            
+        },{
+            global: false,
+            name: "shape",
+            tags: {
+                "a": {
+                    deprecated: true,
+                    type: "enum",
+                    value: ["rect", "circle", "poly", "default"]
+                },
+                "area": {
+                    type: "enum",
+                    value: ["rect", "circle", "poly", "default"]
+                }
+            }
+            
+        },{
+            global: false,
+            name: "type",
+            tags: {
+                "all": {
+                    type: "list",
+                    seperator: " ",
+                    value: /^(?<scheme>[\w.+-]*):\/\/(?<host>[a-zA-Z0-9.-]+)(?<port>:[0-9]+){0,1}(?<path>[\w/.]+){0,1}(?<query>\?[\w]+){0,1}(?<hash>#[\w]+){0,1}$/
+                }
+            },
+        }]
+
+        /*const ping = attributes.find(attribute => attribute.name === "ping")
+        console.log("ping.validate:", ping.test("http://www.google.com http://www.google.com"))*/
+
+       
+        const attributes = [
+            {
+                name: "rel",
+                isGlobal: true,
+                validation: null,
+                validation_overrides: {
+                    "a": {
+                        type: "enum",
+                        value: ["alternate", "author", "bookmark", "dns-prefetch", "external", "help", "licence", "me", "next", "nofollow", "noopener", "noreferrer", "opener", "prev", "privacy-policy", "search", "tag", "terms-of-service"],
+                        requires: ["attribute:href"],
+                        presence: "required",
+                    },
+                    "area": {
+                        type: "enum",
+                        value: ["alternate", "author", "bookmark", "dns-prefetch", "external", "help", "licence", "me", "next", "nofollow", "noopener", "noreferrer", "opener", "prev", "privacy-policy", "search", "tag", "terms-of-service"],
+                        requires: ["attribute:href"],
+                        presence: "required",
+                    },
+                    "link": {
+                        type: "enum",
+                        value: ["alternate", "author", "canonical", "dns-prefetch", "help", "icon", "licence", "manifest", "me", "modulepreload", "next", "pingback", "preconnect", "prefetch", "preload", "prerender", "prev", "privacy-policy", "search", "stylesheet", "terms-of-service"],
+                        requires: ["attribute:href"],
+                        presence: "required",
+                    },
+                    "form": {
+                        type: "enum",
+                        value: ["external", "help", "licence", "next", "nofollow", "noopener", "noreferrer", "opener", "prev", "search"],
+                        requires: ["attribute:href"],
+                        presence: "required",
+                    },
+                },
+            },{
+                name: "href",
+                isGlobal: false,
+                validation: {
+                    type: "regexp",
+                    value: /^[\w:#.@]+$/,
+                    requires: [],
+                    presence: "required"
+                },
+                validation_overrides: null
+            }
+        ]
+
+
+
+        const tagnames = [
+            {
+                name: "a",
+                closingTag: "required|optional|forbidden",
+                isDeprecated: false,
+                isExperimental: false,
+                categories: ["flow-content", "phrasing-content", "interactive-content", "palpable-content"],
+                parents: {
+                    permitted: ["category:flow-content"],
+                    forbidden: ["tag:a"]
+                },
+                content: {
+                    permitted: ["category:transparent-content"],
+                    forbidden: ["category:interactive-content", "tag:a", "attribute:tabindex"]
+                },
+                DOMInterface: "HTMLAnchorElement",
+                attributes: {
+                    acceptGlobal: true,
+                    permitted: ["download", "href", "hreflang", "ping", "referrerpolicy", "rel", "target", "type"],
+                    deprecated: ["charset", "coords", "name", "rev", "shape"]
+                },
+                specifications: [{
+                    name: "HTML Standard",
+                    author: "WHATWG",
+                    url: "https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-a-element"
+                }],
+                references: [{
+                    name: "<a>: The Anchor element",
+                    author: "MDN",
+                    url: "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a"
+                }],
+            }
+        ]
+
+
+        const actions = [{
+                name: "autopredict-tagname",
+                callbacks: {
+                    "navigateenter": (event) => {
+                        console.log("CHECK FOR AUTOFILL ...", event.token.textContent)
+                        const caret = getCaret();
+                        console.log("caret: ", caret)
+                    },
+                    "navigateleave": (event) => {
+                        console.log("REMOVE AUTOFILL");
+                    }
+                }
+            },{
+                name: "highlight-closing-tag",
+                callbacks: {
+                    "navigateenter": (event) => {
+                        const closingToken = findClosingToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.closingTokenTextContent)
+
+                        if(closingToken){
+                            event.token.classList.add("highlight")
+                            closingToken.classList.add("highlight")
+                        } else {
+                            event.token.classList.add("highlight-error")
+
+                        }
+                    },
+                    "navigateleave": (event) => {
+                        const closingToken = findClosingToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.closingTokenTextContent)
+
+                        if(closingToken){
+                            event.token.classList.remove("highlight")
+                            closingToken.classList.remove("highlight")
+                        } else {
+                            event.token.classList.remove("highlight-error")
+
+                        }
+                    }
+                }
+            },{
+                name: "highlight-opening-tag",
+                callbacks: {
+                    "navigateenter": (event) => {
+                        const openingToken = findOpeningToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.openingTokenTextContent)
+
+                        if(openingToken){
+                            event.token.classList.add("highlight")
+                            openingToken.classList.add("highlight")
+                        } else {
+                            event.token.classList.add("highlight-error")
+
+                        }
+                    },
+                    "navigateleave": (event) => {
+                        const openingToken = findOpeningToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.openingTokenTextContent)
+
+                        if(openingToken){
+                            event.token.classList.remove("highlight")
+                            openingToken.classList.remove("highlight")
+                        } else {
+                            event.token.classList.remove("highlight-error")
+
+                        }
+                    }
+                }
+            }]
+
+        
+
+        const patterns = [
+            {
+                mimetype: "css",
+                name: "multilineComments",
+                re: /(?<multilineComments>\/\*[\s\S]*?\*\/)/g,
+                replacerFn: ({multilineComments} = {}) => {
+                    let html = multilineComments
+                                    .split("\n")
+                                    .map((line) => wrapToken(line, ["css-multiline-comment"]).outerHTML)
+                                    .join("\n")
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "selectors",
+                re: /(?<cssSpacer> *)(?<selector>[\w:> ()-]+)(?= {|,)/g,
+                replacerFn: ({cssSpacer, selector} = {}) => {
+                    let html = wrapToken(" ".repeat(cssSpacer.length), ["css-spacer"]).outerHTML;
+                    html += wrapToken(selector, ["css-selector"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_properties",
+                re: /(?<cssProperty>[\w-]+)(?= *:)/g,
+                replacerFn: ({cssProperty} = {}) => {
+                    let html = wrapToken(cssProperty, ["css-property"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_values",
+                re:  /(?<cssValue>[^:]+)(?= *;)/g,
+                replacerFn: ({cssValue} = {}) => {
+                    let html = wrapToken(cssValue, ["css-value"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_curly_open",
+                re:  /(?<curlyBraceOpen>{)/g,
+                replacerFn: ({curlyBraceOpen} = {}) => {
+                    let html = wrapToken(curlyBraceOpen, ["css-curly-open"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_curly_close",
+                re: /(?<curlyBraceClose>})/g,
+                replacerFn: ({curlyBraceClose} = {}) => {
+                    let html = wrapToken(curlyBraceClose, ["css-curly-close"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "colon",
+                re:  /(?<colon>:)/g,
+                replacerFn: ({colon} = {}, parser) => {
+                    let html = wrapToken(colon, ["css-colon"]).outerHTML;
+
+                    return html
+
+                }
+            },{
+                mimetype: "css",
+                name: "semiColon",
+                re:  /(?<semiColon>;)/g,
+                replacerFn: ({semiColon} = {}, parser) => {
+                    let html = wrapToken(semiColon, ["css-semi-colon"]).outerHTML;
+
+                    return html
+
+                }
+            },{
+                mimetype: "js",
+                name: "multilineComments",
+                re: /(?<multilineComments>\/\*[\s\S]*?\*\/)/g,
+                replacerFn: ({multilineComments} = {}) => {
+                    let html = multilineComments
+                                    .split("\n")
+                                    .map((line) => wrapToken(line, ["js-multiline-comment"]).outerHTML)
+                                    .join("\n")
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "singleLineComment",
+                re: /(?<singleLineComment>\/\/.*)/g,
+                replacerFn: ({singleLineComment} = {}) => {
+                    let html = wrapToken(singleLineComment, ["js-comment"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "stringLiteral",
+                re: /`(?<stringLiteral>[\s\S]*?)`/g,
+                replacerFn: ({stringLiteral} = {}) => {
+                    const variableRe = /\${ *(?<variable>[\w.\[\]"']*) *}/g;
+
+                    let html = wrapToken("`", ["js-backtick"]).outerHTML;
+
+                    html += wrapToken(stringLiteral, ["js-literal-value"]).outerHTML;
+                    html += wrapToken("`", ["js-backtick"]).outerHTML;
+
+                    html = html.replace(variableRe, (match, variable) => {
+                        let _html = wrapToken("$", ["js-literal-dollar"]).outerHTML;
+                        _html += wrapToken(
+                            "{",
+                            ["js-literal-curly-open"],
+                            [{
+                                name: "highlight-closing-tag",
+                                params: {
+                                    openingTokenType: "js-literal-curly-open",
+                                    closingTokenType: "js-literal-curly-close"
+                                }
+                            }]
+                        ).outerHTML;
+                        _html += wrapToken(variable, ["js-literal-variable"]).outerHTML;
+                        _html += wrapToken(
+                            "}",
+                            ["js-literal-curly-close"],
+                            [{
+                                name: "highlight-opening-tag",
+                                params: {
+                                    openingTokenType: "js-literal-curly-open",
+                                    closingTokenType: "js-literal-curly-close"
+                                }
+                            }]
+                        ).outerHTML;
+
+                        return _html;
+                    })
+
+
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "string",
+                re: /(?<string>((?<=')(?:[^'].*)(?='))|(?<=\")(?:[^\"].*)(?=\"))/g,
+                replacerFn: ({string} = {}) => {
+                    let html = wrapToken(string, ["js-string"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsonProperty",
+                re: /(?!")(?<jsonProp>[\w]+(?="* *:))/g,
+                replacerFn: ({jsonProp} = {}) => {
+                    let html = wrapToken(jsonProp, ["json-prop"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsProperty",
+                re: /(?<jsProperty>#{0,1}[\w]+)(?= *=)/g,
+                replacerFn: ({jsProperty} = {}) => {
+                    const className = (jsProperty.charAt(0) === "#")
+                        ? "js-private-property"
+                        : "js-property"
+
+                    let html = wrapToken(jsProperty, [className]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "methodName",
+                re: /(?<methodName>#{0,1}[\w]+ *)(?=\()/g,
+                replacerFn: ({methodName} = {}) => {
+                    let html = wrapToken(methodName, ["js-method-name"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "symbol",
+                re: /(?<symbol>=>|[;=:,<+-])/g,
+                replacerFn: ({symbol} = {}) => {
+                    let html = wrapToken(symbol, ["js-symbol"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "openingCurlyBrace",
+                re: /(?<openingCurlyBrace>{)/g,
+                replacerFn: ({openingCurlyBrace} = {}) => {
+                    let html = wrapToken(
+                        "{",
+                        ["js-curly-brace-open"], 
+                        [{
+                            name: "highlight-closing-tag",
+                            params: {
+                                openingTokenType: "js-curly-brace-open",
+                                closingTokenType: "js-curly-brace-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "closingCurlyBrace",
+                re: /(?<closingCurlyBrace>})/g,
+                replacerFn: ({closingCurlyBrace} = {}) => {
+                    let html = wrapToken(
+                        "}",
+                        ["js-curly-brace-close"], 
+                        [{
+                            name: "highlight-opening-tag",
+                            params: {
+                                openingTokenType: "js-curly-brace-open",
+                                closingTokenType: "js-curly-brace-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "openingBracket",
+                re: /(?<openingBracket>\()/g,
+                replacerFn: ({openingBracket} = {}) => {
+                    let html = wrapToken(
+                        "(",
+                        ["js-bracket-open"], 
+                        [{
+                            name: "highlight-closing-tag",
+                            params: {
+                                openingTokenType: "js-bracket-open",
+                                closingTokenType: "js-bracket-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "closingBracket",
+                re: /(?<closingBracket>\))/g,
+                replacerFn: ({closingBracket} = {}) => {
+                    let html = wrapToken(
+                        ")",
+                        ["js-bracket-close"], 
+                        [{
+                            name: "highlight-opening-tag",
+                            params: {
+                                openingTokenType: "js-bracket-open",
+                                closingTokenType: "js-bracket-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "openingSquareBracket",
+                re: /(?<openingSquareBracket>\[)/g,
+                replacerFn: ({openingSquareBracket} = {}) => {
+                    let html = wrapToken(
+                        "[",
+                        ["js-square-bracket-open"], 
+                        [{
+                            name: "highlight-closing-tag",
+                            params: {
+                                openingTokenType: "js-square-bracket-open",
+                                closingTokenType: "js-square-bracket-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "closingSquareBracket",
+                re: /(?<closingSquareBracket>\])/g,
+                replacerFn: ({closingSquareBracket} = {}) => {
+                    let html = wrapToken(
+                        "]",
+                        ["js-square-bracket-close"], 
+                        [{
+                            name: "highlight-opening-tag",
+                            params: {
+                                openingTokenType: "js-square-bracket-open",
+                                closingTokenType: "js-square-bracket-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsQuotes",
+                re: /(?<jsQuote>['\"])/g,
+                replacerFn: ({jsQuote} = {}) => {
+                    let html = wrapToken(jsQuote, ["js-quote"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "keyword",
+                re: /(?<keyword>\bconst|let|var|static|class\b)/g,
+                replacerFn: ({keyword} = {}) => {
+                    let html = wrapToken(keyword, ["js-keyword", `js-keyword-${keyword}`]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "path",
+                re: /(?<path>[\w]+\.)/g,
+                replacerFn: ({path} = {}) => {
+                    let html = wrapToken(path, ["js-path"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsVariable",
+                re: /(?<jsVariable>#{0,1}[\w]+)/g,
+                replacerFn: ({jsVariable} = {}) => {
+                    const className = (jsVariable.charAt(0) === "#")
+                        ? "js-private-variable"
+                        : "js-variable"
+
+                    let html = wrapToken(jsVariable, [className]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "nodename",
+                re: /(?<=<)(?<opentag>[\w-]+)|(?<=\/)(?<closetag>[\w-]+)/g,
+                replacerFn: ({opentag, closetag} = {}) => {
+                    let html = "";
+
+                    if(opentag){
+                        html = wrapToken(
+                            opentag,
+                            ["html-nodename", `html-opening-tag`],
+                            [{
+                                name: "highlight-closing-tag",
+                                params: {
+                                    openingTokenType: "html-opening-tag",
+                                    closingTokenType: "html-closing-tag",
+                                    closingTokenTextContent: opentag
+                                }
+                            },{
+                                name: "autopredict-tagname",
+                                params: {
+                                    openingTokenType: "html-opening-tag",
+                                    closingTokenType: "html-closing-tag",
+                                    closingTokenTextContent: opentag
+                                }
+                            }]
+                        ).outerHTML
+                            
+                    } else if (closetag){
+                        html = wrapToken(
+                            closetag,
+                            ["html-nodename", "html-closing-tag"],
+                            [{
+                                name: "highlight-opening-tag",
+                                params: {
+                                    openingTokenType: "html-opening-tag",
+                                    closingTokenType: "html-closing-tag",
+                                    openingTokenTextContent: closetag
+                                }
+                            }]
+                        ).outerHTML
+
+                    }
+                   
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "attributes",
+                re: /(?!<[^<]* )(?<attrName>[\w\-]*)(?<spacer_1> *)=(?<spacer_2> *)(?:(?:(?<quoteType>["'])(?<stringValue>[\/\w.,= \-]*)\k<quoteType>)|(?<value>[\w\-.]+))/g,
+                replacerFn: ({attrName, spacer_1, spacer_2, quoteType, stringValue, value} = {}) => {
+                    let html = wrapToken(attrName, ["html-attr-name"]).outerHTML;
+
+                    html += wrapToken(spacer_1, ["html-spacer"]).outerHTML
+                    html += wrapToken("=", ["html-equal-sign"]).outerHTML
+                    html += wrapToken(spacer_2, ["html-spacer"]).outerHTML
+
+                    if(quoteType){
+                        html += wrapToken(quoteType, ["html-attr-quote-open"]).outerHTML
+                    }
+
+                    html += wrapToken(stringValue||value, ["html-attr-value"]).outerHTML
+
+                    if(quoteType){
+                        html += wrapToken(quoteType, ["html-attr-quote-close"]).outerHTML
+                    }
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "brackets",
+                re: /(?<selfClosingBracket>\/>)|(?<closeTagLeftBracket><\/)(?=[\w]+>)|(?<openTagLeftBracket><)(?=[\w-]+)|(?!<[\s\S]*?)(?<rightBracket>>)/g,
+                replacerFn: ({selfClosingBracket, closeTagLeftBracket, openTagLeftBracket, rightBracket} = {}) => {
+                    let html = "";
+
+                    if(openTagLeftBracket){
+                        html += wrapToken("<", ["html-bracket-left"]).outerHTML
+                    } else if(closeTagLeftBracket){
+                        html += wrapToken("<", ["html-bracket-right"]).outerHTML
+                        html += wrapToken("/", ["html-back-slash"]).outerHTML
+
+                    } else if(rightBracket){
+                        html += wrapToken(">", ["html-bracket-right"]).outerHTML
+
+                    } else if(selfClosingBracket){
+                        html += wrapToken("/", ["html-back-slash"]).outerHTML
+                        html += wrapToken(">", ["html-bracket-right"]).outerHTML
+
+                    }
+                    return html
+                }
+            },{
+                mimetype: "all",
+                name: "whitespaces",
+                re: /(?<lineIndent>^[ ]+)/g,
+                replacerFn: ({lineIndent} = {}) => {
+                    let classes = ["editor-whitespace", "editor-indent"];
+                    let textContent = " ".repeat(lineIndent.length);
+
+                    let html = wrapToken(textContent, classes).outerHTML
+
+                    return html
+                }
+            }
+
+        ]
+
+        const cachedPatterns = {}
+
+        const createUUID = ({prefix = "", removeDashes = false} = {}) => {
+            let randomUUID = crypto.randomUUID();
+
+            if(removeDashes){
+                randomUUID.replace("-", "");
+            }
+
+            return `${prefix}${randomUUID}`
+        }
+
+        const getPatternsByMimetype = (mimetype) => {
+            const replacerFunctions = {};
+            let regularExpressions = [];
+
+            patterns
+                .filter(pattern => pattern.mimetype === mimetype || pattern.mimetype === "all")
+                .forEach((pattern, index) => {
+                    const uuid = `__PATTERN__${mimetype.toUpperCase()}_${index}`;
+                    const re = `(?<${uuid}>${pattern.re.source})`;
+
+                    replacerFunctions[uuid] = pattern.replacerFn;
+                    regularExpressions.push(re);
+                })
+            
+            return cachedPatterns[mimetype] = {
+                re: new RegExp(regularExpressions.join("|"), "g"),
+                replacerFunctions
+            } 
+        }
+
+        const splitToLines = (plaintext, mimetype) => {
+            return plaintext
+                .split("\n")
+                .map(line => {
+                    if(line.startsWith("{{{")){
+                        return line
+                    }
+
+                    if(line.trim().length === 0){
+                        line = " "
+                    }
+                    const docFrag = createFragmentFromString(line);
+                    const wrapper = document.createElement("li")
+                    wrapper.setAttribute("data-mimetype", mimetype)
+                    wrapper.classList.add("editor-line")
+
+                    wrapper.append(...docFrag.childNodes)
+
+                    return wrapper.outerHTML
+                })
+                .join("")
+        }
+
+        const mimetypeTagMap = {
+            "style": "css",
+            "script": "js",
+        }
+
+        const parse = (plaintext, mimetype) => {
+            const blocksRe = /(?<=<(?<blocktype>script|style)[\w\-=" ]*>)(?<content>[\w\W]*?)(?=<\/\k<blocktype>>)/g;
+            const blocks = [];
+
+            plaintext = plaintext.replace(blocksRe, (match, blockType, content) => {
+                const uuid = crypto.randomUUID();
+                let placeholder = `\n{{{${uuid}}}}\n`
+                blocks.push({
+                    uuid,
+                    blockType,
+                    content
+                })
+
+                return placeholder
+            })
+            
+            const {re, replacerFunctions} = cachedPatterns[mimetype] || getPatternsByMimetype(mimetype);
+
+            plaintext = plaintext.replace(re, (match, ...args) => {
+                const groups = args[args.length - 1];
+                const groupsAsArray = Array.from(Object.entries(groups));
+
+                const [uuid] = groupsAsArray.find(([group, value]) => group.startsWith(`__PATTERN__${mimetype.toUpperCase()}_`) && value);
+
+                const html = replacerFunctions[uuid](groups)
+
+                return html
+            })
+
+
+            let parsedLines = splitToLines(plaintext, mimetype);
+            
+            // Cant do a replace on doc. Need to search for the placeholder in the array of lines
+            blocks.forEach((block) => {
+                const mimetype = mimetypeTagMap[block.blockType];
+
+                const {re, replacerFunctions} = cachedPatterns[mimetype] || getPatternsByMimetype(mimetype);
+
+                if(Object.keys(replacerFunctions).length > 0){
+                    
+                    const blockDoc = block.content.replace(re, (match, ...args) => {
+                        const groups = args[args.length - 1];
+                        const groupsAsArray = Array.from(Object.entries(groups));
+
+                        const [uuid] = groupsAsArray.find(([group, value]) => group.startsWith(`__PATTERN__${mimetype.toUpperCase()}_`) && value);
+
+                        const html = replacerFunctions[uuid](groups)
+
+                        return html
+                    })
+
+                    const lines = splitToLines(blockDoc, mimetype)
+
+                    parsedLines = parsedLines.replace(`{{{${block.uuid}}}}`, lines)
+                }
+
+                
+            })
+
+           
+
+            return parsedLines
+
+        }
+
+        
+        const selection = window.getSelection();
+
+        let parsed = parse(truth.value, "html")
+
+        edit.innerHTML = parsed;
+
+
+        const updatePreview = (node) => {
+            const plaintext = node.textContent;
+            // Convert Edit text content into doc fragment and put in iframe
+            const domParser = new DOMParser();
+            const doc = domParser.parseFromString(plaintext, "text/html")
+
+            const scripts = doc.querySelectorAll("script");
+
+            const newScripts = Array.from(scripts).map(script => {
+                const scriptElement = document.createElement("script")
+                const scriptText = document.createTextNode(`
+                    (function() {
+                    try {
+                        ${script.textContent}
+                    } catch(error) {
+                        console.error('Error in user code:', error);
+                    }
+                })();`)
+
+                scriptElement.append(scriptText);
+                script.remove()
+
+                return scriptElement;
+            })
+
+            
+            preview.contentWindow.document.firstChild.replaceWith(doc.firstChild);
+
+
+
+            // Add event listeners to preview
+            const previewBody = preview.contentWindow.document.querySelector("body");
+            previewBody.append(...newScripts)
+
+            
+            
+        }
+
+
+        updatePreview(edit)
+
+        const getLine = (node) => {
+            const line = (node.classList && node.classList.contains("editor-line"))
+                    ? node
+                    : node.parentNode.closest(".editor-line");
+
+            const mimetype = line.getAttribute("data-mimetype")
+            const plaintext = line.textContent;
+            
+            return {
+                line,
+                mimetype,
+                plaintext,
+                element: line
+            }
+        }
+
+       
+
+        const getCaret = () => {
+            const target = selection.anchorNode;
+            const caretPosition = selection.anchorOffset;
+            const parentLine = getLine(target)
+
+            const treeWalk = document.createTreeWalker(parentLine.element, NodeFilter.SHOW_TEXT);
+
+            parentLine.caretPosition = caretPosition;
+
+            while(treeWalk.nextNode()) {
+                if(treeWalk.currentNode === target){
+                    // Found the node, stop counting
+                    break;
+                }
+
+                parentLine.caretPosition += treeWalk.currentNode.textContent.length
+            }
+
+            const previousChar = parentLine.plaintext.charAt(parentLine.caretPosition - 1);
+            const nextChar = parentLine.plaintext.charAt(parentLine.caretPosition);
+
+            const token = getToken(target);
+
+            const nextCharToken = getTokenAt(parentLine.element, parentLine.caretPosition + 1)
+
+            const actions = (token && token.dataset && token.dataset.actions)
+                                ? JSON.parse(token.dataset.actions)
+                                : null
+
+            
+            const siblingToken = (nextCharToken)
+                ? {
+                    target: nextCharToken,
+                    caretPosition: caretPosition + 1,
+                    parentLine,
+                    previousChar: nextChar,
+                    nextChar: parentLine.plaintext.charAt(parentLine.caretPosition + 1),
+                    token: nextCharToken,
+                    siblingToken: null,
+                    actions: (nextCharToken.dataset && nextCharToken.dataset.actions) ? JSON.parse(nextCharToken.dataset.actions) : null
+                }
+                : null;
+
+            return {
+                target,
+                caretPosition,
+                parentLine,
+                previousChar,
+                nextChar,
+                token,
+                siblingToken,
+                actions,
+            }
+        }
+
+        
+
+
+        /* SUCCEEDED BY getCaret() */
+        const getCaretPosition = () => {
+            const anchorNode = selection.anchorNode;
+            const anchorOffset = selection.anchorOffset;
+            const {line, mimetype} = getLine(anchorNode);
+            let caretPosition = anchorOffset;
+            const treeWalk = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            const plaintext = line.textContent;
+
+            while(treeWalk.nextNode()) {
+                if(treeWalk.currentNode === anchorNode){
+                    // Found the node, stop counting
+                    break;
+                }
+
+                caretPosition += treeWalk.currentNode.textContent.length
+            }
+
+            const character = {
+                prev: plaintext.charAt(caretPosition - 1),
+                next: plaintext.charAt(caretPosition),
+            }
+
+            
+            const token = {
+                prevChar: (caretPosition > 0) ? getTokenAt(line, caretPosition) : null,
+                nextChar: getTokenAt(line, caretPosition + 1),
+                anchorNode: getToken(anchorNode)
+            }
+
+            return {
+                anchorNode,
+                anchorOffset,
+                caretPosition,
+                line,
+                mimetype,
+                character,
+                token
+            }
+        }
+
+        const setCaretPosition = ({line, caretPosition} = {}) => {
+            const treeWalk = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            let counter = 0;
+            let targetNode = null;
+
+            while(treeWalk.nextNode()) {
+                if(counter + treeWalk.currentNode.textContent.length >= caretPosition){
+                    targetNode = treeWalk.currentNode;
+                    caretPosition = caretPosition - counter
+                    break;
+                }
+
+                counter += treeWalk.currentNode.textContent.length
+            }
+
+            if(targetNode === null){
+                targetNode = line.nextSibling.firstChild
+                caretPosition = 0
+            }
+
+            if(targetNode){
+                selection.setPosition(targetNode, caretPosition)
+
+            }
+        }
+
+        const updateEditor = (node) => {
+            let {caretPosition, anchorNode, anchorOffset} = getCaretPosition();
+            const {line} = getLine(node)
+
+            const mimetype = line.getAttribute("data-mimetype")
+
+            const plaintext = line.textContent;
+            const parsedText = parse(plaintext, mimetype);
+            const docFrag = createFragmentFromString(parsedText);
+            const newLineStart = docFrag.firstChild
+
+            line.replaceWith(...docFrag.childNodes)
+
+
+
+            setCaretPosition({line: newLineStart, caretPosition});
+
+        }
+
+        let history = [];
+        let redo = [];
+
+
+        const observer = new MutationObserver((records, observer) => {
+
+            if(records.length === 1 && records[0].addedNodes.length > 0){
+                console.log("SYSTEM UPDATE")
+
+            } else {
+                console.log("USER UPDATES")
+                const uniqueRecords = records.filter((record, index, self) => record.target.isConnected)
+                const firstRecord = uniqueRecords[0].target;
+
+                updateEditor(firstRecord);
+                updatePreview(edit)
+
+                const lines = Array.from(edit.querySelectorAll("li"));
+                const historyEntry = lines
+                                        .map(line => line.textContent)
+                                        .join("\n");
+
+                history.push(historyEntry)
+                redo = []
+
+                
+            }
+
+            
+        });
+
+        const startObserving = () => {
+            const observerConfig = { childList: true, subtree: true, characterData: true, characterDataOldValue: true, attributes: false };
+            observer.observe(edit, observerConfig);
+        }
+
+        const stopObserving = () => {
+            observer.disconnect();
+        }
+
+        startObserving();
+
+        
+        
+
+    </script>
+
+</body>
+</html>

@@ -24,6 +24,11 @@ router.get("/html10", controller.html_editor10)
 router.get("/html11", controller.html_editor11)
 router.get("/html12", controller.html_editor12)
 router.get("/html13", controller.html_editor13)
+router.get("/html14", controller.html_editor14)
+router.get("/undoredo", controller.undo_redo1)
+router.get("/undoredo2", controller.undo_redo2)
+router.get("/undoredo3", controller.undo_redo3)
+router.get("/undoredo4", controller.undo_redo4)
 
 
 module.exports = router

@@ -12,8 +12,8 @@
         body {
             margin: 0;
             display: grid;
-            grid-template-areas: "truth edit preview";
-            grid-template-columns: 33vw 34vw 33vw;
+            grid-template-areas: "edit preview";
+            grid-template-columns: 50vw 50vw;
         }
 
         #edit {
@@ -21,10 +21,13 @@
             position: relative;
         }
 
+      
+
         #truth {
             grid-area: truth;
             background-color: grey;
-            color: white
+            color: white;
+            display: none;
         }
 
         #preview {
@@ -39,6 +42,10 @@
             font-family: monospace;
             font-size: 1.25em;
             font-weight: 400;
+        }
+
+        .hidden{
+            display: none;;
         }
 
 
@@ -82,6 +89,14 @@
             .editor-line[data-mimetype="js"]::marker {
                 color: yellow;
             }
+
+            .highlight {
+                background-color: green;
+            }
+
+            .highlight-error {
+                background-color: red;
+            }
         </style>
 
         
@@ -113,12 +128,22 @@
     .js-comment {
         color: green;
     }
-    .js-backtick {}
-    .js-literal-value {}
-    .js-literal-dollar {}
-    .js-literal-curly-open {}
-    .js-literal-variable {}
-    .js-literal-curly-close {}
+    .js-backtick {
+        color: coral;
+    }
+    .js-literal-value {
+        color: coral;
+    }
+    .js-literal-dollar,
+    .js-literal-curly-open,
+    .js-literal-curly-close {
+        color:rgb(7, 156, 255)
+    }
+    
+    .js-literal-variable {
+        color: aqua;
+    }
+
     .js-string {
         color: coral;
 
@@ -135,7 +160,9 @@
     .js-method-name {
         color:yellow
     }
-    .js-symbol {}
+    .js-symbol {
+        color: white;
+    }
     .js-quote {
         color: coral;
     }
@@ -166,7 +193,9 @@
 </style>
 
 <style>
-    .json-prop {}
+    .json-prop {
+        color: aqua;
+    }
 </style>
 
 <style>
@@ -179,7 +208,7 @@
         background-position-y: center;
     }
 
-    .editor-view[data-show-whitespace="true"] .editor-line-feed::before {
+    .editor-view[data-show-whitespace="true"] .editor-line::after {
         background: url(/media/icons/linefeed.svg) repeat-x;
         background-size: 0.55em;
         background-position-y: center;
@@ -298,6 +327,49 @@
 
     <script>
 
+        const getTokenAt = (line, caretPosition) => {
+            const treeWalk = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            let counter = 0;
+            let targetNode = null;
+
+            while(treeWalk.nextNode()) {
+                if(counter + treeWalk.currentNode.textContent.length >= caretPosition){
+                    targetNode = treeWalk.currentNode;
+                    break;
+                }
+
+                counter += treeWalk.currentNode.textContent.length
+            }
+            return (targetNode)
+                ? getToken(targetNode)
+                : null
+        }
+
+        const getToken = (node) => {
+            const parentNode = node.parentNode;
+            const target = (parentNode.classList.contains("token"))
+                ? parentNode
+                : null
+             
+
+            return target
+        }
+
+        const getInfo = () => {
+            const anchorNode = selection.anchorNode;
+
+            const {line, mimetype, character, token} = getCaretPosition(anchorNode);
+
+            return {
+                line,
+                mimetype,
+                character,
+                token,
+            }
+        }
+
+        
+
         const createFragmentFromString = (htmlString) => {
             const range = document.createRange();
             const docFragment = range.createContextualFragment(htmlString);
@@ -309,15 +381,166 @@
         const truth = document.getElementById("truth")
         const preview = document.getElementById("preview")
 
+        edit.addEventListener("navigateleave", (event) => {
+            // Get action for target
+            if(event.detail.action){
+                const action = actions.find(action => action.name === event.detail.action);
+
+                if(action){
+                    action.callbacks["navigateleave"](event.detail)
+                }
+            }
+            
+        })
+
+        edit.addEventListener("navigateenter", (event) => {
+            // Get action for target
+            if(event.detail.action){
+                const action = actions.find(action => action.name === event.detail.action);
+
+                if(action){
+                    action.callbacks["navigateenter"](event.detail)
+                }
+
+              
+            }
+
+           
+        })
+
+        // Add event listeners to edit
+        edit.addEventListener("keyup", (event) => {
+            const key = event.key;
+            const anchorNode = selection.anchorNode;
+            //console.log("EDIT: keyup", event.target)
+            //startObserving();
+
+            switch(key){
+                case "ArrowUp":
+                case "ArrowDown":
+                case "ArrowLeft":
+                case "ArrowRight":
+                    dispatchNav()
+                    break;
+            }
+        })
+
+        let previousCaret = null
+
+        const dispatchNav = () => {
+            
+            const caret = getCaret();
+
+            if(previousCaret && previousCaret.target !== caret.target){
+                previousCaret.target.dispatchEvent(
+                    new CustomEvent("navigateleave", {
+                        bubbles: true,
+                        detail: previousCaret,
+                    })
+                )
+            }
+
+
+            caret.target.dispatchEvent(
+                new CustomEvent("navigateenter", {
+                    bubbles: true,
+                    detail: caret,
+                })
+            )
+
+            previousCaret = caret;
+
+        }
+
+        edit.addEventListener("click", (event) => {
+            dispatchNav();
+        })
+
+        edit.addEventListener("keydown", (event) => {
+            //console.log("EDIT: keydown", event.target)
+            const shiftKey = event.shiftKey
+            const ctrlKey = event.ctrlKey;
+            const key = event.key;
+            const anchorNode = selection.anchorNode;
+            const {line} = getLine(anchorNode)
+            const caret = getCaret()
+            console.log(caret)
+
+            if(caret.token && caret.token.classList.contains("html-nodename")){
+                console.log("Editing a nodename.")
+                //stopObserving();
+            }
+        
+            
+
+            if(key === "Tab"){
+                event.preventDefault();
+                console.log("line:", line)
+                if(shiftKey){
+                    console.log("Tab Left")
+                } else {
+                    console.log("Insert tab")
+                }
+            }
+
+
+            if(ctrlKey && key.toLowerCase() === "z"){
+                console.group("GET HISTORY")
+                console.log("history:", history)
+                console.log("redo:", redo)
+                console.groupEnd();
+
+                event.preventDefault();
+                if(shiftKey){
+                    // REDO
+                    const redoState = redo.pop();
+                    history.push(redoState)
+
+                    if(redoState) {
+                        stopObserving();
+
+                        let parsed = parse(redoState, "html")
+                        edit.innerHTML = parsed
+
+                        startObserving();
+                    } else {
+                        console.log("NO REDO.")
+                    }
+                } else {
+                    // UNDO
+                    const previousState = history.pop()
+                    redo.push(previousState);
+
+                    if(previousState){
+                        stopObserving();
+
+                        let parsed = parse(previousState, "html")
+                        edit.innerHTML = parsed
+
+                        startObserving();
+
+                    } else {
+                        console.log("NO UNDO.")
+                    }
+                }
+
+                
+            }
+        })
+
         const previewWindow = preview.contentWindow;
 
 
-        const wrap = (plaintext, classes, {key, value} = {}) => {
+        const wrapToken = (plaintext, classes, {action = null, params} = {}) => {
             const wrapper = document.createElement("span")
-            wrapper.classList.add(...classes)
+            wrapper.classList.add(...classes, "token")
 
-            if(key && value){
-                wrapper.dataset[key] = value;
+            if(action){
+                if(params){
+                    wrapper.dataset.params = JSON.stringify(params);
+                }
+
+                wrapper.dataset.action = action;
             }
             const textNode = document.createTextNode(plaintext);
 
@@ -330,6 +553,151 @@
             return " ".repeat(length)
         }
 
+
+        const parentNextSibling = (node) => {
+            const sibling = node.parentNode.nextElementSibling;
+            const firstChild = (sibling) ? sibling.firstChild : null;
+
+            return firstChild;
+        }
+
+        const parentPreviousSibling = (node) => {
+            const sibling = node.parentNode.previousElementSibling;
+            const lastChild = (sibling) ? sibling.lastChild : null;
+
+            return lastChild;
+        }
+
+        const findClosingToken = (startToken, openingTokenType, closingTokenType, closingTokenTextContent) => {
+            let walkNode = startToken.nextSibling || parentNextSibling(startToken);
+            let nest = 0;
+            let endNode = null;
+
+            while (walkNode) {
+                const classList = walkNode.classList;
+
+                if(classList){
+
+                    if(classList.contains(openingTokenType)){
+                        nest++;
+                    } else if(classList.contains(closingTokenType)){
+
+                        if(nest === 0){
+                            endNode = walkNode;
+                            break;
+                        } else {
+                            nest--;
+                        }
+
+                    }
+
+                }
+
+                walkNode = walkNode.nextSibling || parentNextSibling(walkNode);
+
+                
+            }
+
+            if(closingTokenTextContent && endNode.textContent !== closingTokenTextContent){
+                return null
+            }
+
+            return endNode
+        }
+
+        const findOpeningToken = (endToken, openingTokenType, closingTokenType, openingTokenTextContent) => {
+            let walkNode = endToken.previousSibling || parentPreviousSibling(endToken);
+            let nest = 0;
+            let startNode = null;
+
+            while (walkNode) {
+                const classList = walkNode.classList;
+
+                if(classList){
+
+                    if(classList.contains(closingTokenType)){
+                        nest++;
+                    } else if(classList.contains(openingTokenType)){
+
+                        if(nest === 0){
+                            startNode = walkNode;
+                            break;
+                        } else {
+                            nest--;
+                        }
+
+                    }
+
+                }
+
+                walkNode = walkNode.previousSibling || parentPreviousSibling(walkNode);
+                
+            }
+
+            if(openingTokenTextContent && startNode.textContent !== openingTokenTextContent){
+                return null
+            }
+
+            return startNode
+        }
+
+
+        const actions = [{
+                name: "highlight-closing-tag",
+                callbacks: {
+                    "navigateenter": (event) => {
+                        const closingToken = findClosingToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.closingTokenTextContent)
+
+                        if(closingToken){
+                            event.token.classList.add("highlight")
+                            closingToken.classList.add("highlight")
+                        } else {
+                            event.token.classList.add("highlight-error")
+
+                        }
+                    },
+                    "navigateleave": (event) => {
+                        const closingToken = findClosingToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.closingTokenTextContent)
+
+                        if(closingToken){
+                            event.token.classList.remove("highlight")
+                            closingToken.classList.remove("highlight")
+                        } else {
+                            event.token.classList.remove("highlight-error")
+
+                        }
+                    }
+                }
+            },{
+                name: "highlight-opening-tag",
+                callbacks: {
+                    "navigateenter": (event) => {
+                        const openingToken = findOpeningToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.openingTokenTextContent)
+
+                        if(openingToken){
+                            event.token.classList.add("highlight")
+                            openingToken.classList.add("highlight")
+                        } else {
+                            event.token.classList.add("highlight-error")
+
+                        }
+                    },
+                    "navigateleave": (event) => {
+                        const openingToken = findOpeningToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.openingTokenTextContent)
+
+                        if(openingToken){
+                            event.token.classList.remove("highlight")
+                            openingToken.classList.remove("highlight")
+                        } else {
+                            event.token.classList.remove("highlight-error")
+
+                        }
+                    }
+                }
+            }]
+
+        
+
         const patterns = [
             {
                 mimetype: "css",
@@ -338,7 +706,7 @@
                 replacerFn: ({multilineComments} = {}) => {
                     let html = multilineComments
                                     .split("\n")
-                                    .map((line) => wrap(line, ["css-multiline-comment"]).outerHTML)
+                                    .map((line) => wrapToken(line, ["css-multiline-comment"]).outerHTML)
                                     .join("\n")
                     return html
                 }
@@ -347,8 +715,8 @@
                 name: "selectors",
                 re: /(?<cssSpacer> *)(?<selector>[\w:> ()-]+)(?= {|,)/g,
                 replacerFn: ({cssSpacer, selector} = {}) => {
-                    let html = wrap(" ".repeat(cssSpacer.length), ["css-spacer"]).outerHTML;
-                    html += wrap(selector, ["css-selector"]).outerHTML;
+                    let html = wrapToken(" ".repeat(cssSpacer.length), ["css-spacer"]).outerHTML;
+                    html += wrapToken(selector, ["css-selector"]).outerHTML;
                     return html
                 }
             },{
@@ -356,7 +724,7 @@
                 name: "css_properties",
                 re: /(?<cssProperty>[\w-]+)(?= *:)/g,
                 replacerFn: ({cssProperty} = {}) => {
-                    let html = wrap(cssProperty, ["css-property"]).outerHTML;
+                    let html = wrapToken(cssProperty, ["css-property"]).outerHTML;
                     return html
                 }
             },{
@@ -364,7 +732,7 @@
                 name: "css_values",
                 re:  /(?<cssValue>[^:]+)(?= *;)/g,
                 replacerFn: ({cssValue} = {}) => {
-                    let html = wrap(cssValue, ["css-value"]).outerHTML;
+                    let html = wrapToken(cssValue, ["css-value"]).outerHTML;
                     return html
                 }
             },{
@@ -372,7 +740,7 @@
                 name: "css_curly_open",
                 re:  /(?<curlyBraceOpen>{)/g,
                 replacerFn: ({curlyBraceOpen} = {}) => {
-                    let html = wrap(curlyBraceOpen, ["css-curly-open"]).outerHTML;
+                    let html = wrapToken(curlyBraceOpen, ["css-curly-open"]).outerHTML;
                     return html
                 }
             },{
@@ -380,7 +748,7 @@
                 name: "css_curly_close",
                 re: /(?<curlyBraceClose>})/g,
                 replacerFn: ({curlyBraceClose} = {}) => {
-                    let html = wrap(curlyBraceClose, ["css-curly-close"]).outerHTML;
+                    let html = wrapToken(curlyBraceClose, ["css-curly-close"]).outerHTML;
                     return html
                 }
             },{
@@ -388,7 +756,7 @@
                 name: "colon",
                 re:  /(?<colon>:)/g,
                 replacerFn: ({colon} = {}, parser) => {
-                    let html = wrap(colon, ["css-colon"]).outerHTML;
+                    let html = wrapToken(colon, ["css-colon"]).outerHTML;
 
                     return html
 
@@ -398,7 +766,7 @@
                 name: "semiColon",
                 re:  /(?<semiColon>;)/g,
                 replacerFn: ({semiColon} = {}, parser) => {
-                    let html = wrap(semiColon, ["css-semi-colon"]).outerHTML;
+                    let html = wrapToken(semiColon, ["css-semi-colon"]).outerHTML;
 
                     return html
 
@@ -410,7 +778,7 @@
                 replacerFn: ({multilineComments} = {}) => {
                     let html = multilineComments
                                     .split("\n")
-                                    .map((line) => wrap(line, ["js-multiline-comment"]).outerHTML)
+                                    .map((line) => wrapToken(line, ["js-multiline-comment"]).outerHTML)
                                     .join("\n")
                     return html
                 }
@@ -419,7 +787,7 @@
                 name: "singleLineComment",
                 re: /(?<singleLineComment>\/\/.*)/g,
                 replacerFn: ({singleLineComment} = {}) => {
-                    let html = wrap(singleLineComment, ["js-comment"]).outerHTML;
+                    let html = wrapToken(singleLineComment, ["js-comment"]).outerHTML;
                     return html
                 }
             },{
@@ -429,16 +797,16 @@
                 replacerFn: ({stringLiteral} = {}) => {
                     const variableRe = /\${ *(?<variable>[\w.\[\]"']*) *}/g;
 
-                    let html = wrap("`", ["js-backtick"]).outerHTML;
+                    let html = wrapToken("`", ["js-backtick"]).outerHTML;
 
-                    html += wrap(stringLiteral, ["js-literal-value"]).outerHTML;
-                    html += wrap("`", ["js-backtick"]).outerHTML;
+                    html += wrapToken(stringLiteral, ["js-literal-value"]).outerHTML;
+                    html += wrapToken("`", ["js-backtick"]).outerHTML;
 
                     html = html.replace(variableRe, (match, variable) => {
-                        let _html = wrap("$", ["js-literal-dollar"]).outerHTML;
-                        _html += wrap("{", ["js-literal-curly-open"]).outerHTML;
-                        _html += wrap(variable, ["js-literal-variable"]).outerHTML;
-                        _html += wrap("}", ["js-literal-curly-close"]).outerHTML;
+                        let _html = wrapToken("$", ["js-literal-dollar"]).outerHTML;
+                        _html += wrapToken("{", ["js-literal-curly-open"], {action: "highlight-closing-tag", params: {openingTokenType: "js-literal-curly-open", closingTokenType: "js-literal-curly-close"}}).outerHTML;
+                        _html += wrapToken(variable, ["js-literal-variable"]).outerHTML;
+                        _html += wrapToken("}", ["js-literal-curly-close"], {action: "highlight-opening-tag", params: {openingTokenType: "js-literal-curly-open", closingTokenType: "js-literal-curly-close"}}).outerHTML;
 
                         return _html;
                     })
@@ -451,7 +819,7 @@
                 name: "string",
                 re: /(?<string>((?<=')(?:[^'].*)(?='))|(?<=\")(?:[^\"].*)(?=\"))/g,
                 replacerFn: ({string} = {}) => {
-                    let html = wrap(string, ["js-string"]).outerHTML;
+                    let html = wrapToken(string, ["js-string"]).outerHTML;
                     return html
                 }
             },{
@@ -459,7 +827,7 @@
                 name: "jsonProperty",
                 re: /(?!")(?<jsonProp>[\w]+(?="* *:))/g,
                 replacerFn: ({jsonProp} = {}) => {
-                    let html = wrap(jsonProp, ["json-prop"]).outerHTML;
+                    let html = wrapToken(jsonProp, ["json-prop"]).outerHTML;
                     return html
                 }
             },{
@@ -471,7 +839,7 @@
                         ? "js-private-property"
                         : "js-property"
 
-                    let html = wrap(jsProperty, [className]).outerHTML;
+                    let html = wrapToken(jsProperty, [className]).outerHTML;
                     return html
                 }
             },{
@@ -479,15 +847,15 @@
                 name: "methodName",
                 re: /(?<methodName>#{0,1}[\w]+ *)(?=\()/g,
                 replacerFn: ({methodName} = {}) => {
-                    let html = wrap(methodName, ["js-method-name"]).outerHTML;
+                    let html = wrapToken(methodName, ["js-method-name"]).outerHTML;
                     return html
                 }
             },{
                 mimetype: "js",
                 name: "symbol",
-                re: /(?<symbol>=>|[;=:,<])/g,
+                re: /(?<symbol>=>|[;=:,<+-])/g,
                 replacerFn: ({symbol} = {}) => {
-                    let html = wrap(symbol, ["js-symbol"]).outerHTML;
+                    let html = wrapToken(symbol, ["js-symbol"]).outerHTML;
                     return html
                 }
             },{
@@ -495,7 +863,7 @@
                 name: "openingCurlyBrace",
                 re: /(?<openingCurlyBrace>{)/g,
                 replacerFn: ({openingCurlyBrace} = {}) => {
-                    let html = wrap("{", ["js-curly-brace-open"]).outerHTML;
+                    let html = wrapToken("{", ["js-curly-brace-open"], {action: "highlight-closing-tag", params: {openingTokenType: "js-curly-brace-open", closingTokenType: "js-curly-brace-close"}}).outerHTML;
                     return html
                 }
             },{
@@ -503,7 +871,7 @@
                 name: "closingCurlyBrace",
                 re: /(?<closingCurlyBrace>})/g,
                 replacerFn: ({closingCurlyBrace} = {}) => {
-                    let html = wrap("}", ["js-curly-brace-close"]).outerHTML;
+                    let html = wrapToken("}", ["js-curly-brace-close"], {action: "highlight-opening-tag", params: {openingTokenType: "js-curly-brace-open", closingTokenType: "js-curly-brace-close"}}).outerHTML;
                     return html
                 }
             },{
@@ -511,7 +879,7 @@
                 name: "openingBracket",
                 re: /(?<openingBracket>\()/g,
                 replacerFn: ({openingBracket} = {}) => {
-                    let html = wrap("(", ["js-bracket-open"]).outerHTML;
+                    let html = wrapToken("(", ["js-bracket-open"], {action: "highlight-closing-tag", params: {openingTokenType: "js-bracket-open", closingTokenType: "js-bracket-close"}}).outerHTML;
                     return html
                 }
             },{
@@ -519,7 +887,7 @@
                 name: "closingBracket",
                 re: /(?<closingBracket>\))/g,
                 replacerFn: ({closingBracket} = {}) => {
-                    let html = wrap(")", ["js-bracket-close"]).outerHTML;
+                    let html = wrapToken(")", ["js-bracket-close"], {action: "highlight-opening-tag", params: {openingTokenType: "js-bracket-open", closingTokenType: "js-bracket-close"}}).outerHTML;
                     return html
                 }
             },{
@@ -527,7 +895,7 @@
                 name: "openingSquareBracket",
                 re: /(?<openingSquareBracket>\[)/g,
                 replacerFn: ({openingSquareBracket} = {}) => {
-                    let html = wrap("[", ["js-square-bracket-open"]).outerHTML;
+                    let html = wrapToken("[", ["js-square-bracket-open"], {action: "highlight-closing-tag", params: {openingTokenType: "js-square-bracket-open", closingTokenType: "js-square-bracket-close"}}).outerHTML;
                     return html
                 }
             },{
@@ -535,7 +903,7 @@
                 name: "closingSquareBracket",
                 re: /(?<closingSquareBracket>\])/g,
                 replacerFn: ({closingSquareBracket} = {}) => {
-                    let html = wrap("]", ["js-square-bracket-close"]).outerHTML;
+                    let html = wrapToken("]", ["js-square-bracket-close"], {action: "highlight-opening-tag", params: {openingTokenType: "js-square-bracket-open", closingTokenType: "js-square-bracket-close"}}).outerHTML;
                     return html
                 }
             },{
@@ -543,7 +911,7 @@
                 name: "jsQuotes",
                 re: /(?<jsQuote>['\"])/g,
                 replacerFn: ({jsQuote} = {}) => {
-                    let html = wrap(jsQuote, ["js-quote"]).outerHTML;
+                    let html = wrapToken(jsQuote, ["js-quote"]).outerHTML;
                     return html
                 }
             },{
@@ -551,7 +919,7 @@
                 name: "keyword",
                 re: /(?<keyword>\bconst|let|var|static|class\b)/g,
                 replacerFn: ({keyword} = {}) => {
-                    let html = wrap(keyword, ["js-keyword", `js-keyword-${keyword}`]).outerHTML;
+                    let html = wrapToken(keyword, ["js-keyword", `js-keyword-${keyword}`]).outerHTML;
                     return html
                 }
             },{
@@ -559,7 +927,7 @@
                 name: "path",
                 re: /(?<path>[\w]+\.)/g,
                 replacerFn: ({path} = {}) => {
-                    let html = wrap(path, ["js-path"]).outerHTML;
+                    let html = wrapToken(path, ["js-path"]).outerHTML;
                     return html
                 }
             },{
@@ -571,7 +939,7 @@
                         ? "js-private-variable"
                         : "js-variable"
 
-                    let html = wrap(jsVariable, [className]).outerHTML;
+                    let html = wrapToken(jsVariable, [className]).outerHTML;
                     return html
                 }
             },{
@@ -579,18 +947,26 @@
                 name: "nodename",
                 re: /(?<=<)(?<opentag>[\w-]+)|(?<=\/)(?<closetag>[\w-]+)/g,
                 replacerFn: ({opentag, closetag} = {}) => {
-                    const nodename = opentag||closetag;
-                    const classes = (opentag)
-                        ? ["html-opening-tag"]
-                        : ["html-closing-tag"]
-                    
+                    let html = "";
 
-                    const options = {key: "nodeNameId", value: createUUID()}
-                    
-                    classes.push("html-nodename")
+                    if(opentag){
+                        html = wrapToken(
+                            opentag,
+                            ["html-nodename", `html-opening-tag`],
+                            {
+                                action: "highlight-closing-tag",
+                                params: {
+                                    openingTokenType: "html-opening-tag",
+                                    closingTokenType: "html-closing-tag",
+                                    closingTokenTextContent: opentag
+                                }
+                            }).outerHTML
+                            
+                    } else if (closetag){
+                        html = wrapToken(closetag, ["html-nodename", "html-closing-tag"], {action: "highlight-opening-tag", params: {openingTokenType: "html-opening-tag", closingTokenType: "html-closing-tag", openingTokenTextContent: closetag}}).outerHTML
 
-                    let html = wrap(nodename, classes, options).outerHTML
-
+                    }
+                   
                     return html
                 }
             },{
@@ -598,20 +974,20 @@
                 name: "attributes",
                 re: /(?!<[^<]* )(?<attrName>[\w\-]*)(?<spacer_1> *)=(?<spacer_2> *)(?:(?:(?<quoteType>["'])(?<stringValue>[\/\w.,= \-]*)\k<quoteType>)|(?<value>[\w\-.]+))/g,
                 replacerFn: ({attrName, spacer_1, spacer_2, quoteType, stringValue, value} = {}) => {
-                    let html = wrap(attrName, ["html-attr-name"]).outerHTML;
+                    let html = wrapToken(attrName, ["html-attr-name"]).outerHTML;
 
-                    html += wrap(spacer_1, ["html-spacer"]).outerHTML
-                    html += wrap("=", ["html-equal-sign"]).outerHTML
-                    html += wrap(spacer_2, ["html-spacer"]).outerHTML
+                    html += wrapToken(spacer_1, ["html-spacer"]).outerHTML
+                    html += wrapToken("=", ["html-equal-sign"]).outerHTML
+                    html += wrapToken(spacer_2, ["html-spacer"]).outerHTML
 
                     if(quoteType){
-                        html += wrap(quoteType, ["html-attr-quote-open"]).outerHTML
+                        html += wrapToken(quoteType, ["html-attr-quote-open"]).outerHTML
                     }
 
-                    html += wrap(stringValue||value, ["html-attr-value"]).outerHTML
+                    html += wrapToken(stringValue||value, ["html-attr-value"]).outerHTML
 
                     if(quoteType){
-                        html += wrap(quoteType, ["html-attr-quote-close"]).outerHTML
+                        html += wrapToken(quoteType, ["html-attr-quote-close"]).outerHTML
                     }
                     return html
                 }
@@ -623,17 +999,17 @@
                     let html = "";
 
                     if(openTagLeftBracket){
-                        html += wrap("<", ["html-bracket-left"]).outerHTML
+                        html += wrapToken("<", ["html-bracket-left"]).outerHTML
                     } else if(closeTagLeftBracket){
-                        html += wrap("<", ["html-bracket-right"]).outerHTML
-                        html += wrap("/", ["html-back-slash"]).outerHTML
+                        html += wrapToken("<", ["html-bracket-right"]).outerHTML
+                        html += wrapToken("/", ["html-back-slash"]).outerHTML
 
                     } else if(rightBracket){
-                        html += wrap(">", ["html-bracket-right"]).outerHTML
+                        html += wrapToken(">", ["html-bracket-right"]).outerHTML
 
                     } else if(selfClosingBracket){
-                        html += wrap("/", ["html-back-slash"]).outerHTML
-                        html += wrap(">", ["html-bracket-right"]).outerHTML
+                        html += wrapToken("/", ["html-back-slash"]).outerHTML
+                        html += wrapToken(">", ["html-bracket-right"]).outerHTML
 
                     }
                     return html
@@ -641,23 +1017,12 @@
             },{
                 mimetype: "all",
                 name: "whitespaces",
-                re: /(?<lineIndent>^[ ]+)|(?<spaces>[ ]+)|(?<newLine>\n)/g,
-                replacerFn: ({lineIndent, spaces, newLine} = {}) => {
-                    let classes = ["editor-whitespace"];
-                    let textContent = "";
+                re: /(?<lineIndent>^[ ]+)/g,
+                replacerFn: ({lineIndent} = {}) => {
+                    let classes = ["editor-whitespace", "editor-indent"];
+                    let textContent = " ".repeat(lineIndent.length);
 
-                    if(lineIndent){
-                        textContent = " ".repeat(lineIndent.length);
-                        classes.push("editor-indent")
-                    } else if(spaces){
-                        textContent = " ".repeat(spaces.length);
-                        classes.push("editor-spaces")
-                    } else if(newLine){
-                        textContent = "\n";
-                        classes.push("editor-line-feed")
-                    }
-
-                    let html = wrap(textContent, classes).outerHTML
+                    let html = wrapToken(textContent, classes).outerHTML
 
                     return html
                 }
@@ -708,7 +1073,6 @@
                     if(line.trim().length === 0){
                         line = " "
                     }
-
                     const docFrag = createFragmentFromString(line);
                     const wrapper = document.createElement("li")
                     wrapper.setAttribute("data-mimetype", mimetype)
@@ -834,29 +1198,7 @@
             previewBody.append(...newScripts)
 
             
-            // Add event listeners to edit
-            edit.addEventListener("keyup", (event) => {
-                //console.log("EDIT: keyup", event.target)
-            })
-
-            edit.addEventListener("keydown", (event) => {
-                //console.log("EDIT: keydown", event.target)
-                const shiftKey = event.shiftKey
-                const key = event.key;
-                const anchorNode = selection.anchorNode;
-                const line = getLine(anchorNode)
             
-
-                if(key === "Tab"){
-                    event.preventDefault();
-                    console.log("line:", line)
-                    if(shiftKey){
-                        console.log("Tab Left")
-                    } else {
-                        console.log("Insert tab")
-                    }
-                }
-            })
         }
 
 
@@ -866,16 +1208,91 @@
             const line = (node.classList && node.classList.contains("editor-line"))
                     ? node
                     : node.parentNode.closest(".editor-line");
+
+            const mimetype = line.getAttribute("data-mimetype")
+            const plaintext = line.textContent;
             
-            return line
+            return {
+                line,
+                mimetype,
+                plaintext,
+                element: line
+            }
         }
 
+       
+
+        const getCaret = () => {
+            const target = selection.anchorNode;
+            const caretPosition = selection.anchorOffset;
+            const parentLine = getLine(target)
+
+            const treeWalk = document.createTreeWalker(parentLine.element, NodeFilter.SHOW_TEXT);
+
+            parentLine.caretPosition = caretPosition;
+
+            while(treeWalk.nextNode()) {
+                if(treeWalk.currentNode === target){
+                    // Found the node, stop counting
+                    break;
+                }
+
+                parentLine.caretPosition += treeWalk.currentNode.textContent.length
+            }
+
+            const previousChar = parentLine.plaintext.charAt(parentLine.caretPosition - 1);
+            const nextChar = parentLine.plaintext.charAt(parentLine.caretPosition);
+
+            const token = getToken(target);
+
+            const nextCharToken = getTokenAt(parentLine.element, parentLine.caretPosition + 1)
+
+            const action = (token && token.dataset)
+                                ? token.dataset.action
+                                : null
+
+            const params = (token && token.dataset && token.dataset.params)
+                    ? JSON.parse(token.dataset.params)
+                    : null
+
+            const siblingToken = (nextCharToken)
+                ? {
+                    target: nextCharToken,
+                    caretPosition: caretPosition + 1,
+                    parentLine,
+                    previousChar: nextChar,
+                    nextChar: parentLine.plaintext.charAt(parentLine.caretPosition + 1),
+                    token: nextCharToken,
+                    siblingToken: null,
+                    action: nextCharToken.dataset.action,
+                    params: (nextCharToken.dataset.params) ? JSON.parse(nextCharToken.dataset.params) : null
+                }
+                : null;
+
+            return {
+                target,
+                caretPosition,
+                parentLine,
+                previousChar,
+                nextChar,
+                token,
+                siblingToken,
+                action,
+                params
+            }
+        }
+
+        
+
+
+        /* SUCCEEDED BY getCaret() */
         const getCaretPosition = () => {
             const anchorNode = selection.anchorNode;
             const anchorOffset = selection.anchorOffset;
-            const line = getLine(anchorNode);
+            const {line, mimetype} = getLine(anchorNode);
             let caretPosition = anchorOffset;
             const treeWalk = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            const plaintext = line.textContent;
 
             while(treeWalk.nextNode()) {
                 if(treeWalk.currentNode === anchorNode){
@@ -886,11 +1303,26 @@
                 caretPosition += treeWalk.currentNode.textContent.length
             }
 
+            const character = {
+                prev: plaintext.charAt(caretPosition - 1),
+                next: plaintext.charAt(caretPosition),
+            }
+
+            
+            const token = {
+                prevChar: (caretPosition > 0) ? getTokenAt(line, caretPosition) : null,
+                nextChar: getTokenAt(line, caretPosition + 1),
+                anchorNode: getToken(anchorNode)
+            }
+
             return {
                 anchorNode,
                 anchorOffset,
                 caretPosition,
-                line
+                line,
+                mimetype,
+                character,
+                token
             }
         }
 
@@ -922,7 +1354,7 @@
 
         const updateEditor = (node) => {
             let {caretPosition, anchorNode, anchorOffset} = getCaretPosition();
-            const line = getLine(node)
+            const {line} = getLine(node)
 
             const mimetype = line.getAttribute("data-mimetype")
 
@@ -930,24 +1362,58 @@
             const parsedText = parse(plaintext, mimetype);
             const docFrag = createFragmentFromString(parsedText);
             const newLineStart = docFrag.firstChild
+
             line.replaceWith(...docFrag.childNodes)
+
+
 
             setCaretPosition({line: newLineStart, caretPosition});
 
         }
 
-        
+        let history = [];
+        let redo = [];
+
 
         const observer = new MutationObserver((records, observer) => {
-            const uniqueRecords = records.filter((record, index, self) => record.target.isConnected)
-            const firstRecord = uniqueRecords[0].target;
 
-            updateEditor(firstRecord);
-            updatePreview(edit)
+            if(records.length === 1 && records[0].addedNodes.length > 0){
+                console.log("SYSTEM UPDATE")
+
+            } else {
+                console.log("USER UPDATES")
+                const uniqueRecords = records.filter((record, index, self) => record.target.isConnected)
+                const firstRecord = uniqueRecords[0].target;
+
+                updateEditor(firstRecord);
+                updatePreview(edit)
+
+                const lines = Array.from(edit.querySelectorAll("li"));
+                const historyEntry = lines
+                                        .map(line => line.textContent)
+                                        .join("\n");
+
+                history.push(historyEntry)
+                redo = []
+
+                
+            }
+
+            
         });
 
-        const observerConfig = { childList: false, subtree: true, characterData: true, characterDataOldValue: true, attributes: false };
-        observer.observe(edit, observerConfig);
+        const startObserving = () => {
+            const observerConfig = { childList: true, subtree: true, characterData: true, characterDataOldValue: true, attributes: false };
+            observer.observe(edit, observerConfig);
+        }
+
+        const stopObserving = () => {
+            observer.disconnect();
+        }
+
+        startObserving();
+
+        
         
 
     </script>
