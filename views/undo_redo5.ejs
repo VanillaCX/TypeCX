@@ -1,0 +1,2464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            margin: 0;
+            display: grid;
+            grid-template-areas:    "edit preview"
+                                    "menu preview";
+            grid-template-columns: 50vw 50vw;
+            grid-template-rows: 1fr min-content;
+        }
+
+        #edit {
+            grid-area: edit;
+            position: relative;
+        }
+
+        #menu {
+            grid-area: menu;
+        }
+
+        #truth {
+            grid-area: truth;
+            background-color: grey;
+            color: white;
+            display: none;
+        }
+
+        #preview {
+            grid-area: preview;
+            height: 100%;
+            width: 100%;
+            border: 0;
+        }
+
+        #edit,
+        #truth {
+            font-family: monospace;
+            font-size: 1.25em;
+            font-weight: 400;
+        }
+
+        .hidden{
+            display: none;;
+        }
+
+
+        
+        
+        </style>
+
+
+        <style>
+            @counter-style lines {
+                system: numeric;
+                symbols: "0" "1" "2" "3" "4" "5" "6" "7" "8" "9";
+                suffix: ": ";
+            }
+
+            .editor-view {
+                list-style: lines;
+                margin: 0;
+                background-color: rgb(37, 37, 37);
+                
+            }
+
+            .editor-line:hover {
+                background-color: rgb(65, 65, 65);
+            }
+
+            .editor-line:focus {
+                background-color: red;
+            }
+
+            .editor-line[data-mimetype="css"]::marker {
+                color: green;
+            }
+
+            
+
+            .editor-line[data-mimetype="html"]::marker {
+                color: blue;
+            }
+
+            .editor-line[data-mimetype="js"]::marker {
+                color: yellow;
+            }
+
+            .highlight {
+                background-color: green;
+            }
+
+            .highlight-error {
+                background-color: red;
+            }
+
+            span.validator-syntax-error {
+                text-decoration: underline dashed red;
+                text-decoration-thickness: from-font;
+                }
+
+            span.validator-invalid {
+                text-decoration: underline dashed red;
+                text-decoration-thickness: from-font;
+            }
+
+            span.validator-attr-not-found {
+                text-decoration: underline dashed red;
+                text-decoration-thickness: from-font;
+            }
+
+            span.validator-tag-not-found {
+                text-decoration: underline dashed red;
+                text-decoration-thickness: from-font;
+            }
+
+            [data-validator-syntax-error] {
+                position: relative;
+            }
+
+            [data-validator-syntax-error]:hover:after {
+                content: attr(data-validator-syntax-error);
+                position: absolute;
+                background: rgba(255, 255, 255, 0.9);
+                padding: 0.25em 0.5em;
+                font-size: 0.75em;
+                top: 1.25em;
+                color: red;
+                font-weight: 900;
+                left: 0;
+                white-space: pre;
+            }
+
+            
+        </style>
+
+        
+<style>
+    .css-multiline-comment,
+    .css-comment {
+        color: green;
+    }
+    .css-spacer {}
+    .css-property {
+        color: aqua;
+    }
+    .css-value {
+        color: coral;
+    }
+    .css-curly-open,
+    .css-curly-close {
+        color: yellow;
+    }
+    .css-colon {}
+    .css-semi-colon {}
+    .css-selector {
+        color: orange;
+    }
+</style>
+
+<style>
+    .js-multiline-comment,
+    .js-comment {
+        color: green;
+    }
+    .js-backtick {
+        color: coral;
+    }
+    .js-literal-value {
+        color: coral;
+    }
+    .js-literal-dollar,
+    .js-literal-curly-open,
+    .js-literal-curly-close {
+        color:rgb(7, 156, 255)
+    }
+    
+    .js-literal-variable {
+        color: aqua;
+    }
+
+    .js-string {
+        color: coral;
+
+    }
+    .js-property {
+        color: aqua;
+
+    }
+
+    .js-private-property {
+        color: darkcyan;
+
+    }
+    .js-method-name {
+        color:yellow
+    }
+    .js-symbol {
+        color: white;
+    }
+    .js-quote {
+        color: coral;
+    }
+    .js-keyword {
+        color:rgb(7, 156, 255)
+    }
+    .js-keyword-const {}
+    .js-keyword-let {}
+    .js-keyword-var {}
+    .js-keyword-static {}
+    .js-keyword-class {}
+    .js-path {
+        color: aqua;
+    }
+    .js-private-variable {}
+    .js-variable {
+        color: aqua;
+    }
+
+    .js-bracket-open,
+    .js-bracket-close,
+    .js-square-bracket-open,
+    .js-square-bracket-close,
+    .js-curly-brace-open,
+    .js-curly-brace-close {
+        color: yellow;
+    }
+</style>
+
+<style>
+    .json-prop {
+        color: aqua;
+    }
+</style>
+
+<style>
+    .editor-view[data-show-whitespace="true"] .css-spacer,
+    .editor-view[data-show-whitespace="true"] .html-spacer, 
+    .editor-view[data-show-whitespace="true"] .editor-indent,
+    .editor-view[data-show-whitespace="true"] .editor-spaces {
+        background: url(/media/icons/circle.svg) repeat-x;
+        background-size: 0.55em;
+        background-position-y: center;
+    }
+
+    .editor-view[data-show-whitespace="true"] .editor-line::after {
+        background: url(/media/icons/linefeed.svg) repeat-x;
+        background-size: 0.55em;
+        background-position-y: center;
+        content: " "
+    }
+
+
+    .editor-line[data-mimetype="html"] {
+        color: white;
+    }
+    
+    .html-nodename {
+        color:rgb(7, 156, 255)
+    }
+    
+    .html-equal-sign {
+        color: white
+    }
+    .html-attr-quote-open,
+    .html-attr-quote-close {
+        color: lightcoral
+    }
+    .html-attr-name {
+        color: aqua;
+    }
+    .html-attr-value {
+        color: coral;
+    }
+    .html-bracket-left,
+    .html-bracket-right,
+    .html-back-slash {
+        color: grey
+    }
+
+    .html-lineIndent {
+        background: url(/media/icons/space.png) repeat-x;
+        background-size: 0.55em;
+        background-position-y: center;
+    }
+    
+</style>
+
+</head>
+<body>
+    <ul id="predictive"></ul>
+    <ul data-show-whitespace="false" class="editor-view" id="edit" contenteditable="plaintext-only" spellcheck="false"></ul>
+    <textarea id="truth">
+<html leetest="hello" lang="en-EN" class="my-test anotherone">
+    <head lang="fr-Brai">
+        <title lang="fr-Brai-FR">Test page</title>
+    </head>
+    <body class="main app">
+        <hgroup>
+            <h1>Heading</h1>
+            <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
+        </hgroup>
+    </body>
+</html>   
+    </textarea>
+    <menu id="menu">
+        <li><button type="button" id="validate">Validate</button></li>
+    </menu>
+    <iframe id="preview"></iframe>
+
+    <script>
+
+        const getTokenAt = (line, caretPosition) => {
+            const treeWalk = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            let counter = 0;
+            let targetNode = null;
+
+            while(treeWalk.nextNode()) {
+                if(counter + treeWalk.currentNode.textContent.length >= caretPosition){
+                    targetNode = treeWalk.currentNode;
+                    break;
+                }
+
+                counter += treeWalk.currentNode.textContent.length
+            }
+            return (targetNode)
+                ? getToken(targetNode)
+                : null
+        }
+
+        const getToken = (node) => {
+            const parentNode = node.parentNode;
+            const target = (parentNode.classList.contains("token"))
+                ? parentNode
+                : null
+             
+
+            return target
+        }
+
+        const getInfo = () => {
+            const anchorNode = selection.anchorNode;
+
+            const {line, mimetype, character, token} = getCaretPosition(anchorNode);
+
+            return {
+                line,
+                mimetype,
+                character,
+                token,
+            }
+        }
+
+        
+
+        const createFragmentFromString = (htmlString) => {
+            const range = document.createRange();
+            const docFragment = range.createContextualFragment(htmlString);
+            
+            return docFragment;
+        }
+        
+        const predictive = document.getElementById("predictive")
+        const edit = document.getElementById("edit")
+        const truth = document.getElementById("truth")
+        const preview = document.getElementById("preview")
+        const validate = document.getElementById("validate")
+
+        
+        const parseDOM = (rootNode) => {
+            const treeWalk = document.createTreeWalker(rootNode, NodeFilter.SHOW_ELEMENT,
+                (node) => {
+                    return node.classList.contains("html-opening-tag") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+                }
+            );
+
+            const DOM = {}
+
+            while(treeWalk.nextNode()) {
+                const currentNode = treeWalk.currentNode;
+                const tagName = currentNode.textContent;
+
+                if(!DOM[tagName]){
+                    DOM[tagName] = []
+                }
+
+                DOM[tagName].push({
+                    tag: currentNode,
+                    attributes: []
+                })
+
+                let walkTag = currentNode.nextSibling;
+
+                while (walkTag){
+
+
+                    if(!walkTag){
+                        walkTag = parentNextSibling(walkTag)
+                    
+                    } else if(!walkTag.classList) {
+                        walkTag = walkTag.nextSibling
+                    
+                    } else {
+
+                        if(walkTag.classList.contains("html-bracket-right")){
+                            break;
+
+                        } else if(walkTag.classList.contains("html-bracket-left")){
+                            break;
+
+                        } else {
+                            if(walkTag.classList.contains("html-attr-name")){
+                                DOM[tagName][DOM[tagName].length - 1].attributes.push({
+                                    name: walkTag
+                                })
+
+                            } else if(walkTag.classList.contains("html-attr-value")){
+                                DOM[tagName][DOM[tagName].length - 1].attributes[DOM[tagName][DOM[tagName].length - 1].attributes.length - 1].value = walkTag
+                                
+                            }
+
+                            walkTag = walkTag.nextSibling;
+                        }
+
+                    }
+
+
+                }
+                
+            }
+
+            return DOM
+        }
+
+        const validateDoc = (event) => {
+            const DOM = parseDOM(edit);
+
+            Object.entries(DOM).forEach(([tagName, elementList]) => {
+                const ElementSpecs = HTMLElements.find((_el => _el.name === tagName))
+
+                    elementList.forEach((element) => {
+                        if(!ElementSpecs){
+                            if(element.tag.textContent.split("-").length > 1){
+                                console.log("CUSTOM TAG:", element.tag)
+                            } else {
+                                // Tag is invalid ... What to do ?
+                                element.tag.classList.add("validator-tag-not-found")
+                                element.tag.dataset.validatorSyntaxError = `<${tagName}> is not a valid HTML tag`;
+                            }
+                            
+                        }
+                        
+                        element.attributes.forEach((attribute) => {
+                            const attrName = attribute.name.textContent;
+                            const attrValue = attribute.value.textContent;
+                            let standard = null;
+
+                            if(ElementSpecs){
+                                const attrDefinition = HTMLAttributes.find(attr => attr.name === attrName)
+
+                                if(attrDefinition){
+                                    if(attrDefinition.global || ElementSpecs.attributes.standard.find(_attrName => _attrName === attrName)){
+                                        standard = "html-attr-standard"
+                                    } else if(ElementSpecs.attributes.nonStandard.find(_attrName => _attrName === attrName)){
+                                        standard = "html-attr-nonstandard"
+                                    } else if(ElementSpecs.attributes.deprecated.find(_attrName => _attrName === attrName)){
+                                        standard = "html-attr-deprecated"
+                                    } else if(ElementSpecs.attributes.experimental.find(_attrName => _attrName === attrName)){
+                                        standard = "html-attr-experimental"
+                                    } 
+
+                                    if(standard){
+                                        attribute.name.classList.add(standard)
+                                        const attributeRE = attrDefinition.validation.default.re;
+                                        const attributeHelper = attrDefinition.validation.default.helper;
+                                        const valid = attrValue.match(attributeRE);
+
+                                        if(valid){
+                                            attribute.value.classList.add("validator-valid")
+
+                                        } else {
+                                            attribute.value.classList.add("validator-syntax-error")
+                                            attribute.value.dataset.validatorSyntaxError = `[${attrName}] ${attributeHelper}]`;
+                                        }
+
+                                    } else {
+                                        attribute.name.classList.add("validator-invalid")
+                                        attribute.name.dataset.validatorSyntaxError = `${tagName} does not accept the ${attrName} attribute`;
+                                    }
+                                } else {
+                                    // attribute not valid for this tag
+                                    attribute.name.classList.add("validator-attr-not-found")
+                                    attribute.name.dataset.validatorSyntaxError = `[${attrName}] attribute doest exist`;
+                                }
+                            } 
+
+                            
+
+                            
+
+
+                        })
+                    })
+
+                
+                
+                
+            })
+
+        }
+
+        
+
+       
+        validate.addEventListener("click", validateDoc)
+
+        edit.addEventListener("navigateleave", (event) => {
+            // Get action for target
+            
+
+            if(event.detail.actions){
+
+                event.detail.actions.forEach(action => {
+                    const matchingAction = actions.find(a => a.name === action.name);
+
+                    if(matchingAction){
+                        event.detail.params = action.params;
+                        matchingAction.callbacks["navigateleave"](event.detail)
+                    }
+                })
+              
+            }
+            
+        })
+
+        edit.addEventListener("navigateenter", (event) => {
+            // Get action for target
+            if(event.detail.actions){
+
+                event.detail.actions.forEach(action => {
+                    const matchingAction = actions.find(a => a.name === action.name);
+
+                    if(matchingAction){
+                        event.detail.params = action.params;
+                        matchingAction.callbacks["navigateenter"](event.detail)
+                    }
+                })
+              
+            }
+
+           
+        })
+
+        const predictiveTagName = (node) => {
+            const plaintext = node.textContent;
+            // Still need to check parent to see if it a valid tag
+            const matches = HTMLElements.filter(element => element.name.startsWith(plaintext))
+            console.log(matches);
+
+            const listItems = matches.map(element => {
+                const li = document.createElement("li");
+                const button = document.createElement("button")
+                const textNode= document.createTextNode(element.name);
+                
+                button.addEventListener("click", (event) => {
+                    console.log("Set tag to: ", textNode)
+                }, {once: true})
+
+                li.append(button)
+                button.append(textNode);
+
+                return li
+            })
+
+
+            predictive.replaceChildren(...listItems)
+
+
+        }
+
+        // Add event listeners to edit
+        edit.addEventListener("keyup", (event) => {
+            const key = event.key;
+            const anchorNode = selection.anchorNode;
+            //console.log("EDIT: keyup", event.target)
+            //startObserving();
+            const caret = getCaret();
+            //console.log(caret)
+            if(caret.token && caret.token.classList && caret.token.classList.contains("html-nodename")){
+                predictiveTagName(caret.token)
+            }
+
+            switch(key){
+                case "ArrowUp":
+                case "ArrowDown":
+                case "ArrowLeft":
+                case "ArrowRight":
+                    dispatchNav()
+                    break;
+            }
+        })
+
+        let previousCaret = null
+
+        const dispatchNav = () => {
+            
+            const caret = getCaret();
+
+            if(previousCaret && previousCaret.target !== caret.target){
+                previousCaret.target.dispatchEvent(
+                    new CustomEvent("navigateleave", {
+                        bubbles: true,
+                        detail: previousCaret,
+                    })
+                )
+            }
+
+
+            caret.target.dispatchEvent(
+                new CustomEvent("navigateenter", {
+                    bubbles: true,
+                    detail: caret,
+                })
+            )
+
+            previousCaret = caret;
+
+        }
+
+        edit.addEventListener("click", (event) => {
+            dispatchNav();
+        })
+
+        edit.addEventListener("keydown", (event) => {
+            //console.log("EDIT: keydown", event.target)
+            const shiftKey = event.shiftKey
+            const ctrlKey = event.ctrlKey;
+            const key = event.key;
+            const anchorNode = selection.anchorNode;
+            const {line} = getLine(anchorNode)
+            const caret = getCaret()
+            //console.log(caret)
+
+            if(caret.token && caret.token.classList.contains("html-nodename")){
+                //console.log("Editing a nodename.")
+                //stopObserving();
+            }
+        
+            
+
+            if(key === "Tab"){
+                event.preventDefault();
+                console.log("line:", line)
+                if(shiftKey){
+                    console.log("Tab Left")
+                } else {
+                    console.log("Insert tab")
+                }
+            }
+
+
+            if(ctrlKey && key.toLowerCase() === "z"){
+                console.group("GET HISTORY")
+                console.log("history:", history)
+                console.log("redo:", redo)
+                console.groupEnd();
+
+                event.preventDefault();
+                if(shiftKey){
+                    // REDO
+                    const redoState = redo.pop();
+                    history.push(redoState)
+
+                    if(redoState) {
+                        stopObserving();
+
+                        let parsed = parse(redoState, "html")
+                        edit.innerHTML = parsed
+
+                        startObserving();
+                    } else {
+                        console.log("NO REDO.")
+                    }
+                } else {
+                    // UNDO
+                    const previousState = history.pop()
+                    redo.push(previousState);
+
+                    if(previousState){
+                        stopObserving();
+
+                        let parsed = parse(previousState, "html")
+                        edit.innerHTML = parsed
+
+                        startObserving();
+
+                    } else {
+                        console.log("NO UNDO.")
+                    }
+                }
+
+                
+            }
+        })
+
+        const previewWindow = preview.contentWindow;
+
+
+        const wrapToken = (plaintext, classes, actions = null) => {
+            const wrapper = document.createElement("span")
+            wrapper.classList.add(...classes, "token")
+
+            if(actions){
+                wrapper.dataset.actions = JSON.stringify(actions); 
+            }
+            
+            const textNode = document.createTextNode(plaintext);
+
+            wrapper.append(textNode);
+
+            return wrapper
+        }
+
+        const wrapToken2 = (plaintext, classes, {action = null, params} = {}, testing = [{test: "hello"}]) => {
+            console.log("testing:", testing)
+            const wrapper = document.createElement("span")
+            wrapper.classList.add(...classes, "token")
+
+            if(action){
+                if(params){
+                    wrapper.dataset.params = JSON.stringify(params);
+                }
+
+                wrapper.dataset.action = action;
+            }
+            const textNode = document.createTextNode(plaintext);
+
+            wrapper.append(textNode);
+
+            return wrapper
+        }
+
+        const spacer = (length) => {
+            return " ".repeat(length)
+        }
+
+
+        const parentNextSibling = (node) => {
+            const sibling = node.parentNode.nextElementSibling;
+            const firstChild = (sibling) ? sibling.firstChild : null;
+
+            return firstChild;
+        }
+
+        const parentPreviousSibling = (node) => {
+            const sibling = node.parentNode.previousElementSibling;
+            const lastChild = (sibling) ? sibling.lastChild : null;
+
+            return lastChild;
+        }
+
+        const findClosingToken = (startToken, openingTokenType, closingTokenType, closingTokenTextContent) => {
+            let walkNode = startToken.nextSibling || parentNextSibling(startToken);
+            let nest = 0;
+            let endNode = null;
+
+            while (walkNode) {
+                const classList = walkNode.classList;
+
+                if(classList){
+
+                    if(classList.contains(openingTokenType)){
+                        nest++;
+                    } else if(classList.contains(closingTokenType)){
+
+                        if(nest === 0){
+                            endNode = walkNode;
+                            break;
+                        } else {
+                            nest--;
+                        }
+
+                    }
+
+                }
+
+                walkNode = walkNode.nextSibling || parentNextSibling(walkNode);
+
+                
+            }
+
+            if(closingTokenTextContent && endNode.textContent !== closingTokenTextContent){
+                return null
+            }
+
+            return endNode
+        }
+
+        const findOpeningToken = (endToken, openingTokenType, closingTokenType, openingTokenTextContent) => {
+            let walkNode = endToken.previousSibling || parentPreviousSibling(endToken);
+            let nest = 0;
+            let startNode = null;
+
+            while (walkNode) {
+                const classList = walkNode.classList;
+
+                if(classList){
+
+                    if(classList.contains(closingTokenType)){
+                        nest++;
+                    } else if(classList.contains(openingTokenType)){
+
+                        if(nest === 0){
+                            startNode = walkNode;
+                            break;
+                        } else {
+                            nest--;
+                        }
+
+                    }
+
+                }
+
+                walkNode = walkNode.previousSibling || parentPreviousSibling(walkNode);
+                
+            }
+
+            if(openingTokenTextContent && startNode.textContent !== openingTokenTextContent){
+                return null
+            }
+
+            return startNode
+        }
+        
+        const HTMLAttributes = [
+            {
+                name: "leetest",
+                global: false,
+                deprecated: false,
+                standard: false,
+                nonStandard: true,
+                experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /^\S$/g,
+                        helper: "Must contain one single letter"
+                    },
+                    exceptions: [
+                        {
+                            element: "a",
+                            re: /^\S$/g
+                        }
+                    ]
+                }
+            },{
+                name: "accesskey",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /^\S$/g
+                    },
+                    exceptions: [
+                        {
+                            element: "a",
+                            re: /^\S$/g
+                        }
+                    ]
+                }
+            },{
+                name: "autocapitalize",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "autofocus",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "class",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /^[a-zA-Z_0-9 -]+$/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "contenteditable",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "data-*",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "dir",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "draggable",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "enterkeyhint",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "exportparts",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "hidden",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "id",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "inert",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "inputmode",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "is",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "itemid",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "itemprop",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "itemprop",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "itemref",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "itemscope",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "itemtype",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "lang",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /^(?<language>[a-z]{2})(?:-(?<script>[a-zA-Z]{4}))?(?:-(?<region>[A-Z]{2}|[0-9]{3}))?$/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "nonce",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "part",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "popover",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "slot",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "spellcheck",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "style",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "tabindex",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "title",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "translate",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                standard:true,
+experimental: false,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },{
+                name: "virtualkeyboardpolicy",
+                global: true,
+                deprecated: false,
+                nonStandard: false,
+                experimental: true,
+                validation: {
+                    default: { 
+                        requiredAttributes: [],
+                        mutuallyExclusiveAttributes: [],
+                        re: /[\s\S]+/g
+                    },
+                    exceptions: []
+                }
+            },
+        ]
+
+      
+        const HTMLElements = [
+            {
+                name: "input",
+                status: "standard",
+                startTag: "required",
+                endTag: "forbidden",
+                categories: ["flow-content", "phrasing-content"],
+                content: {
+                    ordered: [
+                        ["element:p", "element:h1|element:h2|element:h3|element:h4|element:h5|element:h6"],
+                        ["element:h1|element:h2|element:h3|element:h4|element:h5|element:h6", "element:p"],
+                    ],
+                    unordered: ["element:script", "element:template"],
+                    forbidden: ["hgroup"]
+                },
+                attributes: {
+                    global: true,
+                    standard: ["accept?requires=type"],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "hgroup",
+                status: "standard",
+                startTag: "required",
+                endTag: "required",
+                categories: ["flow-content", "phrasing-content"],
+                content: {
+                    ordered: [
+                        ["element:p", "element:h1|element:h2|element:h3|element:h4|element:h5|element:h6"],
+                        ["element:h1|element:h2|element:h3|element:h4|element:h5|element:h6", "element:p"],
+                    ],
+                    unordered: ["element:script", "element:template"],
+                    forbidden: ["hgroup"]
+                },
+                attributes: {
+                    global: true,
+                    standard: ["accept"],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "p",
+                status: "standard",
+                startTag: "required",
+                endTag: "optional?next-sibling=(element:address||element:article||element:aside||element:blockquote||element:details||element:div||element:dl||element:fieldset||element:figcaption||element:figure||element:footer||element:form||element:h1||element:h2||element:h3||element:h4||element:h5||element:h6||element:header||element:hgroup||element:hr||element:main||element:menu||element:nav||element:ol||element:p||element:pre||element:search||element:section||element:table||element:ul)||child-nodelist=empty&&parent-sibling!=(element:a||element:audio||element:del||element:ins||element:map||element:noscript||element:video)",
+                categories: ["flow-content", "palpable-content"],
+                content: {
+                    ordered: [],
+                    unordered: ["category:phrasing"],
+                    forbidden: []
+                },
+                attributes: {
+                    global: true,
+                    standard: [],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "html",
+                status: "standard",
+                startTag: "optional?first-child!=comment",
+                endTag: "optional?first-child!=comment",
+                categories: [],
+                content: {
+                    ordered: ["element:head", "element:body"],
+                    unordered: [],
+                    forbidden: []
+                },
+                attributes: {
+                    global: true,
+                    standard: [],
+                    nonStandard: ["leetest"],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "body",
+                status: "standard",
+                startTag: "optional?child-nodelist=empty||first-child!=(whitespace||comment)",
+                endTag: "optional?next-sibling!=comment",
+                categories: [],
+                content: {
+                    ordered: [],
+                    unordered: ["category:flow-content"],
+                    forbidden: []
+                },
+                attributes: {
+                    global: true,
+                    standard: ["onafterprint", "onbeforeprint", "onbeforeunload", "onhashchange", "onlanguagechange", "onmessage", "onmessageerror", "onoffline", "ononline", "onpageswap", "onpagehide", "onpagereveal", "onpageshow", "onpopstate", "onrejectionhandled", "onstorage", "onunhandledrejection", "onunload"],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "head",
+                status: "standard",
+                startTag: "optional?child-nodelist=empty||first-child=element",
+                endTag: "optional?next-sibling!=(comment|whitespace)",
+                categories: [],
+                content: {
+                    ordered: [],
+                    unordered: ["element:title?max=1", "element:base?max=1", "category:metadata-content"],
+                    forbidden: []
+                },
+                attributes: {
+                    global: true,
+                    standard: ["onafterprint", "onbeforeprint", "onbeforeunload", "onhashchange", "onlanguagechange", "onmessage", "onmessageerror", "onoffline", "ononline", "onpageswap", "onpagehide", "onpagereveal", "onpageshow", "onpopstate", "onrejectionhandled", "onstorage", "onunhandledrejection", "onunload"],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "h1",
+                status: "standard",
+                startTag: "required",
+                endTag: "required",
+                categories: ["flow-content", "palpable-content", "heading-content"],
+                content: {
+                    ordered: [],
+                    unordered: ["category:phrasing"],
+                    forbidden: []
+                },
+                attributes: {
+                    global: true,
+                    standard: [],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "h2",
+                status: "standard",
+                startTag: "required",
+                endTag: "required",
+                categories: ["flow-content", "palpable-content", "heading-content"],
+                content: {
+                    ordered: [],
+                    unordered: ["category:phrasing"],
+                    forbidden: []
+                },
+                attributes: {
+                    global: true,
+                    standard: [],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "h3",
+                status: "standard",
+                startTag: "required",
+                endTag: "required",
+                categories: ["flow-content", "palpable-content", "heading-content"],
+                content: {
+                    ordered: [],
+                    unordered: ["category:phrasing"],
+                    forbidden: []
+                },
+                attributes: {
+                    global: true,
+                    standard: [],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "h4",
+                status: "standard",
+                startTag: "required",
+                endTag: "required",
+                categories: ["flow-content", "palpable-content", "heading-content"],
+                content: {
+                    ordered: [],
+                    unordered: ["category:phrasing"],
+                    forbidden: []
+                },
+                attributes: {
+                    global: true,
+                    standard: [],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "h5",
+                status: "standard",
+                startTag: "required",
+                endTag: "required",
+                categories: ["flow-content", "palpable-content", "heading-content"],
+                content: {
+                    ordered: [],
+                    unordered: ["category:phrasing"],
+                    forbidden: []
+                },
+                attributes: {
+                    global: true,
+                    standard: [],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            },{
+                name: "h6",
+                status: "standard",
+                startTag: "required",
+                endTag: "required",
+                categories: ["flow-content", "palpable-content", "heading-content"],
+                content: {
+                    ordered: [],
+                    unordered: ["category:phrasing"],
+                    forbidden: []
+                },
+                attributes: {
+                    global: true,
+                    standard: [],
+                    nonStandard: [],
+                    experimental: [],
+                    deprecated: [],
+                }
+            }
+        ]
+
+
+        const actions = [{
+                name: "autopredict-tagname",
+                callbacks: {
+                    "navigateenter": (event) => {
+                        console.log("CHECK FOR AUTOFILL ...", event.token.textContent)
+                        const caret = getCaret();
+                        console.log("caret: ", caret)
+                    },
+                    "navigateleave": (event) => {
+                        console.log("REMOVE AUTOFILL");
+                    }
+                }
+            },{
+                name: "highlight-closing-tag",
+                callbacks: {
+                    "navigateenter": (event) => {
+                        const closingToken = findClosingToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.closingTokenTextContent)
+
+                        if(closingToken){
+                            event.token.classList.add("highlight")
+                            closingToken.classList.add("highlight")
+                        } else {
+                            event.token.classList.add("highlight-error")
+
+                        }
+                    },
+                    "navigateleave": (event) => {
+                        const closingToken = findClosingToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.closingTokenTextContent)
+
+                        if(closingToken){
+                            event.token.classList.remove("highlight")
+                            closingToken.classList.remove("highlight")
+                        } else {
+                            event.token.classList.remove("highlight-error")
+
+                        }
+                    }
+                }
+            },{
+                name: "highlight-opening-tag",
+                callbacks: {
+                    "navigateenter": (event) => {
+                        const openingToken = findOpeningToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.openingTokenTextContent)
+
+                        if(openingToken){
+                            event.token.classList.add("highlight")
+                            openingToken.classList.add("highlight")
+                        } else {
+                            event.token.classList.add("highlight-error")
+
+                        }
+                    },
+                    "navigateleave": (event) => {
+                        const openingToken = findOpeningToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.openingTokenTextContent)
+
+                        if(openingToken){
+                            event.token.classList.remove("highlight")
+                            openingToken.classList.remove("highlight")
+                        } else {
+                            event.token.classList.remove("highlight-error")
+
+                        }
+                    }
+                }
+            }]
+
+        
+
+        const patterns = [
+            {
+                mimetype: "css",
+                name: "multilineComments",
+                re: /(?<multilineComments>\/\*[\s\S]*?\*\/)/g,
+                replacerFn: ({multilineComments} = {}) => {
+                    let html = multilineComments
+                                    .split("\n")
+                                    .map((line) => wrapToken(line, ["css-multiline-comment"]).outerHTML)
+                                    .join("\n")
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "selectors",
+                re: /(?<cssSpacer> *)(?<selector>[\w:> ()-]+)(?= {|,)/g,
+                replacerFn: ({cssSpacer, selector} = {}) => {
+                    let html = wrapToken(" ".repeat(cssSpacer.length), ["css-spacer"]).outerHTML;
+                    html += wrapToken(selector, ["css-selector"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_properties",
+                re: /(?<cssProperty>[\w-]+)(?= *:)/g,
+                replacerFn: ({cssProperty} = {}) => {
+                    let html = wrapToken(cssProperty, ["css-property"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_values",
+                re:  /(?<cssValue>[^:]+)(?= *;)/g,
+                replacerFn: ({cssValue} = {}) => {
+                    let html = wrapToken(cssValue, ["css-value"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_curly_open",
+                re:  /(?<curlyBraceOpen>{)/g,
+                replacerFn: ({curlyBraceOpen} = {}) => {
+                    let html = wrapToken(curlyBraceOpen, ["css-curly-open"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "css_curly_close",
+                re: /(?<curlyBraceClose>})/g,
+                replacerFn: ({curlyBraceClose} = {}) => {
+                    let html = wrapToken(curlyBraceClose, ["css-curly-close"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "css",
+                name: "colon",
+                re:  /(?<colon>:)/g,
+                replacerFn: ({colon} = {}, parser) => {
+                    let html = wrapToken(colon, ["css-colon"]).outerHTML;
+
+                    return html
+
+                }
+            },{
+                mimetype: "css",
+                name: "semiColon",
+                re:  /(?<semiColon>;)/g,
+                replacerFn: ({semiColon} = {}, parser) => {
+                    let html = wrapToken(semiColon, ["css-semi-colon"]).outerHTML;
+
+                    return html
+
+                }
+            },{
+                mimetype: "js",
+                name: "multilineComments",
+                re: /(?<multilineComments>\/\*[\s\S]*?\*\/)/g,
+                replacerFn: ({multilineComments} = {}) => {
+                    let html = multilineComments
+                                    .split("\n")
+                                    .map((line) => wrapToken(line, ["js-multiline-comment"]).outerHTML)
+                                    .join("\n")
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "singleLineComment",
+                re: /(?<singleLineComment>\/\/.*)/g,
+                replacerFn: ({singleLineComment} = {}) => {
+                    let html = wrapToken(singleLineComment, ["js-comment"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "stringLiteral",
+                re: /`(?<stringLiteral>[\s\S]*?)`/g,
+                replacerFn: ({stringLiteral} = {}) => {
+                    const variableRe = /\${ *(?<variable>[\w.\[\]"']*) *}/g;
+
+                    let html = wrapToken("`", ["js-backtick"]).outerHTML;
+
+                    html += wrapToken(stringLiteral, ["js-literal-value"]).outerHTML;
+                    html += wrapToken("`", ["js-backtick"]).outerHTML;
+
+                    html = html.replace(variableRe, (match, variable) => {
+                        let _html = wrapToken("$", ["js-literal-dollar"]).outerHTML;
+                        _html += wrapToken(
+                            "{",
+                            ["js-literal-curly-open"],
+                            [{
+                                name: "highlight-closing-tag",
+                                params: {
+                                    openingTokenType: "js-literal-curly-open",
+                                    closingTokenType: "js-literal-curly-close"
+                                }
+                            }]
+                        ).outerHTML;
+                        _html += wrapToken(variable, ["js-literal-variable"]).outerHTML;
+                        _html += wrapToken(
+                            "}",
+                            ["js-literal-curly-close"],
+                            [{
+                                name: "highlight-opening-tag",
+                                params: {
+                                    openingTokenType: "js-literal-curly-open",
+                                    closingTokenType: "js-literal-curly-close"
+                                }
+                            }]
+                        ).outerHTML;
+
+                        return _html;
+                    })
+
+
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "string",
+                re: /(?<string>((?<=')(?:[^'].*)(?='))|(?<=\")(?:[^\"].*)(?=\"))/g,
+                replacerFn: ({string} = {}) => {
+                    let html = wrapToken(string, ["js-string"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsonProperty",
+                re: /(?!")(?<jsonProp>[\w]+(?="* *:))/g,
+                replacerFn: ({jsonProp} = {}) => {
+                    let html = wrapToken(jsonProp, ["json-prop"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsProperty",
+                re: /(?<jsProperty>#{0,1}[\w]+)(?= *=)/g,
+                replacerFn: ({jsProperty} = {}) => {
+                    const className = (jsProperty.charAt(0) === "#")
+                        ? "js-private-property"
+                        : "js-property"
+
+                    let html = wrapToken(jsProperty, [className]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "methodName",
+                re: /(?<methodName>#{0,1}[\w]+ *)(?=\()/g,
+                replacerFn: ({methodName} = {}) => {
+                    let html = wrapToken(methodName, ["js-method-name"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "symbol",
+                re: /(?<symbol>=>|[;=:,<+-])/g,
+                replacerFn: ({symbol} = {}) => {
+                    let html = wrapToken(symbol, ["js-symbol"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "openingCurlyBrace",
+                re: /(?<openingCurlyBrace>{)/g,
+                replacerFn: ({openingCurlyBrace} = {}) => {
+                    let html = wrapToken(
+                        "{",
+                        ["js-curly-brace-open"], 
+                        [{
+                            name: "highlight-closing-tag",
+                            params: {
+                                openingTokenType: "js-curly-brace-open",
+                                closingTokenType: "js-curly-brace-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "closingCurlyBrace",
+                re: /(?<closingCurlyBrace>})/g,
+                replacerFn: ({closingCurlyBrace} = {}) => {
+                    let html = wrapToken(
+                        "}",
+                        ["js-curly-brace-close"], 
+                        [{
+                            name: "highlight-opening-tag",
+                            params: {
+                                openingTokenType: "js-curly-brace-open",
+                                closingTokenType: "js-curly-brace-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "openingBracket",
+                re: /(?<openingBracket>\()/g,
+                replacerFn: ({openingBracket} = {}) => {
+                    let html = wrapToken(
+                        "(",
+                        ["js-bracket-open"], 
+                        [{
+                            name: "highlight-closing-tag",
+                            params: {
+                                openingTokenType: "js-bracket-open",
+                                closingTokenType: "js-bracket-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "closingBracket",
+                re: /(?<closingBracket>\))/g,
+                replacerFn: ({closingBracket} = {}) => {
+                    let html = wrapToken(
+                        ")",
+                        ["js-bracket-close"], 
+                        [{
+                            name: "highlight-opening-tag",
+                            params: {
+                                openingTokenType: "js-bracket-open",
+                                closingTokenType: "js-bracket-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "openingSquareBracket",
+                re: /(?<openingSquareBracket>\[)/g,
+                replacerFn: ({openingSquareBracket} = {}) => {
+                    let html = wrapToken(
+                        "[",
+                        ["js-square-bracket-open"], 
+                        [{
+                            name: "highlight-closing-tag",
+                            params: {
+                                openingTokenType: "js-square-bracket-open",
+                                closingTokenType: "js-square-bracket-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "closingSquareBracket",
+                re: /(?<closingSquareBracket>\])/g,
+                replacerFn: ({closingSquareBracket} = {}) => {
+                    let html = wrapToken(
+                        "]",
+                        ["js-square-bracket-close"], 
+                        [{
+                            name: "highlight-opening-tag",
+                            params: {
+                                openingTokenType: "js-square-bracket-open",
+                                closingTokenType: "js-square-bracket-close"
+                            }
+                        }]
+                    ).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsQuotes",
+                re: /(?<jsQuote>['\"])/g,
+                replacerFn: ({jsQuote} = {}) => {
+                    let html = wrapToken(jsQuote, ["js-quote"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "keyword",
+                re: /(?<keyword>\bconst|let|var|static|class\b)/g,
+                replacerFn: ({keyword} = {}) => {
+                    let html = wrapToken(keyword, ["js-keyword", `js-keyword-${keyword}`]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "path",
+                re: /(?<path>[\w]+\.)/g,
+                replacerFn: ({path} = {}) => {
+                    let html = wrapToken(path, ["js-path"]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "js",
+                name: "jsVariable",
+                re: /(?<jsVariable>#{0,1}[\w]+)/g,
+                replacerFn: ({jsVariable} = {}) => {
+                    const className = (jsVariable.charAt(0) === "#")
+                        ? "js-private-variable"
+                        : "js-variable"
+
+                    let html = wrapToken(jsVariable, [className]).outerHTML;
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "nodename",
+                re: /(?<=<)(?<opentag>[\w-]+)|(?<=\/)(?<closetag>[\w-]+)/g,
+                replacerFn: ({opentag, closetag} = {}) => {
+                    let html = "";
+
+                    if(opentag){
+                        html = wrapToken(
+                            opentag,
+                            ["html-nodename", `html-opening-tag`],
+                            [{
+                                name: "highlight-closing-tag",
+                                params: {
+                                    openingTokenType: "html-opening-tag",
+                                    closingTokenType: "html-closing-tag",
+                                    closingTokenTextContent: opentag
+                                }
+                            },{
+                                name: "autopredict-tagname",
+                                params: {
+                                    openingTokenType: "html-opening-tag",
+                                    closingTokenType: "html-closing-tag",
+                                    closingTokenTextContent: opentag
+                                }
+                            }]
+                        ).outerHTML
+                            
+                    } else if (closetag){
+                        html = wrapToken(
+                            closetag,
+                            ["html-nodename", "html-closing-tag"],
+                            [{
+                                name: "highlight-opening-tag",
+                                params: {
+                                    openingTokenType: "html-opening-tag",
+                                    closingTokenType: "html-closing-tag",
+                                    openingTokenTextContent: closetag
+                                }
+                            }]
+                        ).outerHTML
+
+                    }
+                   
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "attributes",
+                re: /(?!<[^<]* )(?<attrName>[\w\-]*)(?<spacer_1> *)=(?<spacer_2> *)(?:(?:(?<quoteType>["'])(?<stringValue>[\/\w.,=* \-]*)\k<quoteType>)|(?<value>[\w\-.]+))/g,
+                replacerFn: ({attrName, spacer_1, spacer_2, quoteType, stringValue, value} = {}) => {
+                    let html = wrapToken(attrName, ["html-attr-name"]).outerHTML;
+
+                    html += wrapToken(spacer_1, ["html-spacer"]).outerHTML
+                    html += wrapToken("=", ["html-equal-sign"]).outerHTML
+                    html += wrapToken(spacer_2, ["html-spacer"]).outerHTML
+
+                    if(quoteType){
+                        html += wrapToken(quoteType, ["html-attr-quote-open"]).outerHTML
+                    }
+
+                    html += wrapToken(stringValue||value, ["html-attr-value"]).outerHTML
+
+                    if(quoteType){
+                        html += wrapToken(quoteType, ["html-attr-quote-close"]).outerHTML
+                    }
+                    return html
+                }
+            },{
+                mimetype: "html",
+                name: "brackets",
+                re: /(?<selfClosingBracket>\/>)|(?<closeTagLeftBracket><\/)(?=[\w]+>)|(?<openTagLeftBracket><)(?=[\w-]+)|(?!<[\s\S]*?)(?<rightBracket>>)/g,
+                replacerFn: ({selfClosingBracket, closeTagLeftBracket, openTagLeftBracket, rightBracket} = {}) => {
+                    let html = "";
+
+                    if(openTagLeftBracket){
+                        html += wrapToken("<", ["html-bracket-left"]).outerHTML
+                    } else if(closeTagLeftBracket){
+                        html += wrapToken("<", ["html-bracket-right"]).outerHTML
+                        html += wrapToken("/", ["html-back-slash"]).outerHTML
+
+                    } else if(rightBracket){
+                        html += wrapToken(">", ["html-bracket-right"]).outerHTML
+
+                    } else if(selfClosingBracket){
+                        html += wrapToken("/", ["html-back-slash"]).outerHTML
+                        html += wrapToken(">", ["html-bracket-right"]).outerHTML
+
+                    }
+                    return html
+                }
+            },{
+                mimetype: "all",
+                name: "whitespaces",
+                re: /(?<lineIndent>^[ ]+)/g,
+                replacerFn: ({lineIndent} = {}) => {
+                    let classes = ["editor-whitespace", "editor-indent"];
+                    let textContent = " ".repeat(lineIndent.length);
+
+                    let html = wrapToken(textContent, classes).outerHTML
+
+                    return html
+                }
+            }
+
+        ]
+
+        const cachedPatterns = {}
+
+        const createUUID = ({prefix = "", removeDashes = false} = {}) => {
+            let randomUUID = crypto.randomUUID();
+
+            if(removeDashes){
+                randomUUID.replace("-", "");
+            }
+
+            return `${prefix}${randomUUID}`
+        }
+
+        const getPatternsByMimetype = (mimetype) => {
+            const replacerFunctions = {};
+            let regularExpressions = [];
+
+            patterns
+                .filter(pattern => pattern.mimetype === mimetype || pattern.mimetype === "all")
+                .forEach((pattern, index) => {
+                    const uuid = `__PATTERN__${mimetype.toUpperCase()}_${index}`;
+                    const re = `(?<${uuid}>${pattern.re.source})`;
+
+                    replacerFunctions[uuid] = pattern.replacerFn;
+                    regularExpressions.push(re);
+                })
+            
+            return cachedPatterns[mimetype] = {
+                re: new RegExp(regularExpressions.join("|"), "g"),
+                replacerFunctions
+            } 
+        }
+
+        const splitToLines = (plaintext, mimetype) => {
+            return plaintext
+                .split("\n")
+                .map(line => {
+                    if(line.startsWith("{{{")){
+                        return line
+                    }
+
+                    if(line.trim().length === 0){
+                        line = " "
+                    }
+                    const docFrag = createFragmentFromString(line);
+                    const wrapper = document.createElement("li")
+                    wrapper.setAttribute("data-mimetype", mimetype)
+                    wrapper.classList.add("editor-line")
+
+                    wrapper.append(...docFrag.childNodes)
+
+                    return wrapper.outerHTML
+                })
+                .join("")
+        }
+
+        const mimetypeTagMap = {
+            "style": "css",
+            "script": "js",
+        }
+
+        const parse = (plaintext, mimetype) => {
+            const blocksRe = /(?<=<(?<blocktype>script|style)[\w\-=" ]*>)(?<content>[\w\W]*?)(?=<\/\k<blocktype>>)/g;
+            const blocks = [];
+
+            plaintext = plaintext.replace(blocksRe, (match, blockType, content) => {
+                const uuid = crypto.randomUUID();
+                let placeholder = `\n{{{${uuid}}}}\n`
+                blocks.push({
+                    uuid,
+                    blockType,
+                    content
+                })
+
+                return placeholder
+            })
+            
+            const {re, replacerFunctions} = cachedPatterns[mimetype] || getPatternsByMimetype(mimetype);
+
+            plaintext = plaintext.replace(re, (match, ...args) => {
+                const groups = args[args.length - 1];
+                const groupsAsArray = Array.from(Object.entries(groups));
+
+                const [uuid] = groupsAsArray.find(([group, value]) => group.startsWith(`__PATTERN__${mimetype.toUpperCase()}_`) && value);
+
+                const html = replacerFunctions[uuid](groups)
+
+                return html
+            })
+
+
+            let parsedLines = splitToLines(plaintext, mimetype);
+            
+            // Cant do a replace on doc. Need to search for the placeholder in the array of lines
+            blocks.forEach((block) => {
+                const mimetype = mimetypeTagMap[block.blockType];
+
+                const {re, replacerFunctions} = cachedPatterns[mimetype] || getPatternsByMimetype(mimetype);
+
+                if(Object.keys(replacerFunctions).length > 0){
+                    
+                    const blockDoc = block.content.replace(re, (match, ...args) => {
+                        const groups = args[args.length - 1];
+                        const groupsAsArray = Array.from(Object.entries(groups));
+
+                        const [uuid] = groupsAsArray.find(([group, value]) => group.startsWith(`__PATTERN__${mimetype.toUpperCase()}_`) && value);
+
+                        const html = replacerFunctions[uuid](groups)
+
+                        return html
+                    })
+
+                    const lines = splitToLines(blockDoc, mimetype)
+
+                    parsedLines = parsedLines.replace(`{{{${block.uuid}}}}`, lines)
+                }
+
+                
+            })
+
+           
+
+            return parsedLines
+
+        }
+
+        
+        const selection = window.getSelection();
+
+        let parsed = parse(truth.value, "html")
+
+        edit.innerHTML = parsed;
+        validateDoc()
+
+        const updatePreview = (node) => {
+            const plaintext = node.textContent;
+            // Convert Edit text content into doc fragment and put in iframe
+            const domParser = new DOMParser();
+            const doc = domParser.parseFromString(plaintext, "text/html")
+
+            const scripts = doc.querySelectorAll("script");
+
+            const newScripts = Array.from(scripts).map(script => {
+                const scriptElement = document.createElement("script")
+                const scriptText = document.createTextNode(`
+                    (function() {
+                    try {
+                        ${script.textContent}
+                    } catch(error) {
+                        console.error('Error in user code:', error);
+                    }
+                })();`)
+
+                scriptElement.append(scriptText);
+                script.remove()
+
+                return scriptElement;
+            })
+
+            
+            preview.contentWindow.document.firstChild.replaceWith(doc.firstChild);
+
+
+
+            // Add event listeners to preview
+            const previewBody = preview.contentWindow.document.querySelector("body");
+            previewBody.append(...newScripts)
+
+            
+            
+        }
+
+
+        updatePreview(edit)
+
+        const getLine = (node) => {
+            const line = (node.classList && node.classList.contains("editor-line"))
+                    ? node
+                    : node.parentNode.closest(".editor-line");
+
+            const mimetype = line.getAttribute("data-mimetype")
+            const plaintext = line.textContent;
+            
+            return {
+                line,
+                mimetype,
+                plaintext,
+                element: line
+            }
+        }
+
+       
+
+        const getCaret = () => {
+            const target = selection.anchorNode;
+            const caretPosition = selection.anchorOffset;
+            const parentLine = getLine(target)
+
+            const treeWalk = document.createTreeWalker(parentLine.element, NodeFilter.SHOW_TEXT);
+
+            parentLine.caretPosition = caretPosition;
+
+            while(treeWalk.nextNode()) {
+                if(treeWalk.currentNode === target){
+                    // Found the node, stop counting
+                    break;
+                }
+
+                parentLine.caretPosition += treeWalk.currentNode.textContent.length
+            }
+
+            const previousChar = parentLine.plaintext.charAt(parentLine.caretPosition - 1);
+            const nextChar = parentLine.plaintext.charAt(parentLine.caretPosition);
+
+            const token = getToken(target);
+
+            const nextCharToken = getTokenAt(parentLine.element, parentLine.caretPosition + 1)
+
+            const actions = (token && token.dataset && token.dataset.actions)
+                                ? JSON.parse(token.dataset.actions)
+                                : null
+
+            
+            const siblingToken = (nextCharToken)
+                ? {
+                    target: nextCharToken,
+                    caretPosition: caretPosition + 1,
+                    parentLine,
+                    previousChar: nextChar,
+                    nextChar: parentLine.plaintext.charAt(parentLine.caretPosition + 1),
+                    token: nextCharToken,
+                    siblingToken: null,
+                    actions: (nextCharToken.dataset && nextCharToken.dataset.actions) ? JSON.parse(nextCharToken.dataset.actions) : null
+                }
+                : null;
+
+            return {
+                target,
+                caretPosition,
+                parentLine,
+                previousChar,
+                nextChar,
+                token,
+                siblingToken,
+                actions,
+            }
+        }
+
+        
+
+
+        /* SUCCEEDED BY getCaret() */
+        const getCaretPosition = () => {
+            const anchorNode = selection.anchorNode;
+            const anchorOffset = selection.anchorOffset;
+            const {line, mimetype} = getLine(anchorNode);
+            let caretPosition = anchorOffset;
+            const treeWalk = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            const plaintext = line.textContent;
+
+            while(treeWalk.nextNode()) {
+                if(treeWalk.currentNode === anchorNode){
+                    // Found the node, stop counting
+                    break;
+                }
+
+                caretPosition += treeWalk.currentNode.textContent.length
+            }
+
+            const character = {
+                prev: plaintext.charAt(caretPosition - 1),
+                next: plaintext.charAt(caretPosition),
+            }
+
+            
+            const token = {
+                prevChar: (caretPosition > 0) ? getTokenAt(line, caretPosition) : null,
+                nextChar: getTokenAt(line, caretPosition + 1),
+                anchorNode: getToken(anchorNode)
+            }
+
+            return {
+                anchorNode,
+                anchorOffset,
+                caretPosition,
+                line,
+                mimetype,
+                character,
+                token
+            }
+        }
+
+        const setCaretPosition = ({line, caretPosition} = {}) => {
+            const treeWalk = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            let counter = 0;
+            let targetNode = null;
+
+            while(treeWalk.nextNode()) {
+                if(counter + treeWalk.currentNode.textContent.length >= caretPosition){
+                    targetNode = treeWalk.currentNode;
+                    caretPosition = caretPosition - counter
+                    break;
+                }
+
+                counter += treeWalk.currentNode.textContent.length
+            }
+
+            if(targetNode === null){
+                targetNode = line.nextSibling.firstChild
+                caretPosition = 0
+            }
+
+            if(targetNode){
+                selection.setPosition(targetNode, caretPosition)
+
+            }
+        }
+
+        const updateEditor = (node) => {
+            let {caretPosition, anchorNode, anchorOffset} = getCaretPosition();
+            const {line} = getLine(node)
+
+            const mimetype = line.getAttribute("data-mimetype")
+
+            const plaintext = line.textContent;
+            const parsedText = parse(plaintext, mimetype);
+            const docFrag = createFragmentFromString(parsedText);
+            const newLineStart = docFrag.firstChild
+
+            line.replaceWith(...docFrag.childNodes)
+
+
+
+            setCaretPosition({line: newLineStart, caretPosition});
+
+        }
+
+        let history = [];
+        let redo = [];
+
+
+        const observer = new MutationObserver((records, observer) => {
+
+            if(records.length === 1 && records[0].addedNodes.length > 0){
+                //console.log("SYSTEM UPDATE")
+
+            } else {
+                //console.log("USER UPDATES")
+                const uniqueRecords = records.filter((record, index, self) => record.target.isConnected)
+                const firstRecord = uniqueRecords[0].target;
+
+                updateEditor(firstRecord);
+                updatePreview(edit);
+                validateDoc()
+
+                const lines = Array.from(edit.querySelectorAll("li"));
+                const historyEntry = lines
+                                        .map(line => line.textContent)
+                                        .join("\n");
+
+                history.push(historyEntry)
+                redo = []
+
+                
+            }
+
+            
+        });
+
+        const startObserving = () => {
+            const observerConfig = { childList: true, subtree: true, characterData: true, characterDataOldValue: true, attributes: false };
+            observer.observe(edit, observerConfig);
+        }
+
+        const stopObserving = () => {
+            observer.disconnect();
+        }
+
+        startObserving();
+
+        
+        
+
+    </script>
+
+</body>
+</html>

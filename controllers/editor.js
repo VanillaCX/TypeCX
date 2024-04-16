@@ -70,4 +70,12 @@ const undo_redo4 = (req, res, next) => {
     res.render("undo_redo4")
 }
 
-module.exports = {html_editor, html_editor2, html_editor3, html_editor4, html_editor5, html_editor6, html_editor7, html_editor8, html_editor9, html_editor10, html_editor11, html_editor12, html_editor13, html_editor14, undo_redo1, undo_redo2, undo_redo3, undo_redo4}
+const undo_redo5 = (req, res, next) => {
+    res.render("undo_redo5")
+}
+
+const validate1 = (req, res, next) => {
+    res.render("validate1")
+}
+
+module.exports = {html_editor, html_editor2, html_editor3, html_editor4, html_editor5, html_editor6, html_editor7, html_editor8, html_editor9, html_editor10, html_editor11, html_editor12, html_editor13, html_editor14, undo_redo1, undo_redo2, undo_redo3, undo_redo4, validate1, undo_redo5} 
