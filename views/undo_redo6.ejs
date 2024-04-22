@@ -160,7 +160,27 @@
                 white-space: pre;
             }
 
+            .orphan-html-tag {
+                background-color: purple;
+            }
 
+            .highlight-value,
+            .highlight-value-start,
+            .highlight-value-end {
+                background-color: rgba(255, 255, 255, 0.2);
+                /*border-top: 1px solid red;
+                border-bottom: 1px solid red;*/
+            }
+
+            .highlight-value-start {
+                /*border-left: 1px solid red;*/
+            }
+
+            .highlight-value-end {
+                /*border-right: 1px solid red;*/
+            }
+
+            
 
             
         </style>
@@ -285,6 +305,14 @@
     .editor-line[data-mimetype="html"] {
         color: white;
     }
+
+    .editor-line[data-mimetype="css"] {
+        color: white;
+    }
+
+    .editor-line[data-mimetype="js"] {
+        color: white;
+    }
     
     .html-nodename {
         color:rgb(7, 156, 255)
@@ -319,34 +347,23 @@
 
 </head>
 <body>
+    
     <ul id="predictive" data-status="closed"></ul>
     <ul data-show-whitespace="false" class="editor-view" id="edit" contenteditable="plaintext-only" spellcheck="false"></ul>
     <textarea id="truth">
-<html leetest="hello" lang="en-EN" class="my-test anotherone">
-    <head lang="fr-Brai">
-        <title lang="fr-Brai-FR">Test page</title>
-    </head>
-    <body class="main app">
-        <hgroup>
-            <h1>Heading</h1>
-            <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-            <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        </hgroup>
-
-        <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        <p class="text">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        <p class="text">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        <p class="text">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        <p leestest="o">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-        <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Error, quasi pariatur quas aliquam dolorem iure quam iste porro in rerum dolor dolorum quo possimus incidunt aperiam quod? Ratione, odit dolorum.</p>
-
-    </body>
-</html>   
+<style>
+    .title {
+        background-color: blue;
+    }
+</style>
+<h1 class="title">Hello</h1>
+<p id="name">Name</p>
+<script>
+    const username = "Lee";
+    const name = document.getElementById("name");
+    name.textContent = username;
+    console.log(`name:  ${name}`)
+</script>
     </textarea>
     <menu id="menu">
         <li><button type="button" id="validate">Validate</button></li>
@@ -424,10 +441,12 @@
             while(treeWalk.nextNode()) {
                 const currentNode = treeWalk.currentNode;
                 const tagName = currentNode.textContent;
-
+                
                 if(!DOM[tagName]){
                     DOM[tagName] = []
                 }
+
+                
 
                 DOM[tagName].push({
                     tag: currentNode,
@@ -476,15 +495,32 @@
 
             return DOM
         }
+        let DOMElementCounter = 0;
 
-        const validateDoc = (event) => {
-            const DOM = parseDOM(edit);
-
+        const validateDoc = (node = edit) => {
+            console.log("validateDoc ::: node:", node)
+            const DOM = parseDOM(node);
             Object.entries(DOM).forEach(([tagName, elementList]) => {
                 const ElementSpecs = HTMLElements.find((_el => _el.name === tagName))
 
                     elementList.forEach((element) => {
-                        if(!ElementSpecs){
+                        const closingTag = findClosingToken2(element.tag, "html-opening-tag", "html-closing-tag", element.tag.textContent)
+                        if(closingTag){
+                            let tagPairId = DOMElementCounter++;
+                            element.tag.dataset.tagPairId = tagPairId
+                            element.tag.dataset.tagPairPosition = "start"
+                            closingTag.dataset.tagPairId = tagPairId
+                            closingTag.dataset.tagPairPosition = "end"
+                            element.tag.classList.remove("orphan-html-tag")
+                        } else {
+                            element.tag.classList.add("orphan-html-tag")
+                        }
+                        if(ElementSpecs){
+                            element.tag.classList.remove("validator-tag-not-found")
+                            element.tag.removeAttribute("data-validator-tag-not-found")
+                            element.tag.removeAttribute("data-validator-syntax-error")
+
+                        } else {
                             if(element.tag.textContent.split("-").length > 1){
                                 console.log("CUSTOM TAG:", element.tag)
                             } else {
@@ -492,7 +528,11 @@
                                 element.tag.classList.add("validator-tag-not-found")
                                 element.tag.dataset.validatorSyntaxError = `<${tagName}> is not a valid HTML tag`;
                             }
-                            
+                        }
+
+
+                        if(!element.closingTag){
+                            //console.log("No closing tag for: ", element)
                         }
                         
                         element.attributes.forEach((attribute) => {
@@ -559,82 +599,85 @@
        
         validate.addEventListener("click", validateDoc)
 
-        edit.addEventListener("type", (event) => {
-            console.log("type: ", event.detail)
-            console.log("event.detail.actions", event.detail.actions)
+        edit.addEventListener("typedown", (event) => {
+            if(event.detail.eventListeners){
+                // Requested eventListener
+                const listeners = event.detail.eventListeners.filter(eventListener => eventListener.type === "typedown")
+                
+                if(listeners.length === 0){
+                    return false;
+                }
 
-            if(event.detail.actions){
-                const typeActions = event.detail.actions.filter(action => action.type.indexOf("type") > -1)
-                console.log("typeActions:", typeActions)
+                listeners.forEach(listener => {
+                    const callback = eventListeners[listener.id];
 
-                typeActions.forEach(action => {
-                    console.log("Found an action: ", action)
-                    const matchingAction = actions.find(a => a.name === action.name);
-
-                    if(matchingAction){
-                        event.detail.params = action.params;
-                        matchingAction.callbacks["type"](event.detail)
+                    if(callback){
+                        callback(event.detail, {...listener.params})
                     }
                 })
             }
+        })
 
-            
+        edit.addEventListener("typeup", (event) => {
+            if(event.detail.eventListeners){
+                // Requested eventListener
+                const listeners = event.detail.eventListeners.filter(eventListener => eventListener.type === "typeup")
+                
+                if(listeners.length === 0){
+                    return false;
+                }
+
+                listeners.forEach(listener => {
+                    const callback = eventListeners[listener.id];
+
+                    if(callback){
+                        callback(event.detail, {...listener.params})
+                    }
+                })
+
+
+                
+            }
         })
 
         
         edit.addEventListener("navigateleave", (event) => {
-            // Get action for target
-            
+            if(event.detail.eventListeners){
+                // Requested eventListener
+                const listeners = event.detail.eventListeners.filter(eventListener => eventListener.type === "navigateleave")
+                
+                if(listeners.length === 0){
+                    return false;
+                }
 
-            if(event.detail.actions){
+                listeners.forEach(listener => {
+                    const callback = eventListeners[listener.id];
 
-                const navigateLeaveActions = event.detail.actions.filter(action => action.type.indexOf("navigateleave") > -1)
-
-                navigateLeaveActions.forEach(action => {
-                    console.log("Found an action: ", action)
-                    const matchingAction = actions.find(a => a.name === action.name);
-
-                    if(matchingAction){
-                        event.detail.params = action.params;
-                        matchingAction.callbacks["navigateleave"](event.detail)
+                    if(callback){
+                        callback(event.detail, {...listener.params})
                     }
                 })
-
-
-
-              
             }
             
         })
 
         edit.addEventListener("navigateenter", (event) => {
-            console.log("NAV ENTER", event)
-            // Get action for target
-
-            if(event.detail.actions){
-
-                const navigateEnterActions = event.detail.actions.filter(action => action.type.indexOf("navigateenter") > -1)
-
-                navigateEnterActions.forEach(action => {
-                    console.log("Found an action: ", action)
-                    const matchingAction = actions.find(a => a.name === action.name);
-
-                    if(matchingAction){
-                        event.detail.params = action.params;
-                        matchingAction.callbacks["navigateenter"](event.detail)
-                    }
-                })
-
-
-
-
+            if(event.detail.eventListeners){
+                // Requested eventListener
+                const listeners = event.detail.eventListeners.filter(eventListener => eventListener.type === "navigateenter")
+                
+                if(listeners.length === 0){
+                    return false;
                 }
 
+                listeners.forEach(listener => {
+                    const callback = eventListeners[listener.id];
 
-
-
-
-           
+                    if(callback){
+                        callback(event.detail, {...listener.params})
+                    }
+                })
+            }
         })
 
         const killPredictive = (line) => {
@@ -642,16 +685,15 @@
                 predictive.replaceChildren()
                 predictive.dataset.status = "closed";
                 if(line){
-                    setCaretPosition({line: line.line, caretPosition: line.caretPosition});
+                    //setCaretPosition({line: line.line, caretPosition: line.caretPosition});
                 }
             }
         }
 
         let lineOnClosePredictive = null;
 
-        const predictiveTagName = ({token, parentLine} = {}) => {
+        const predictiveTagName = ({token, parentLine, callback} = {}) => {
             lineOnClosePredictive = parentLine;
-            console.log("parentLine:", parentLine)
             const nodeBox = token.getBoundingClientRect();
             const plaintext = token.textContent;
             // Still need to check parent to see if it a valid tag
@@ -663,13 +705,16 @@
                 const textNode= document.createTextNode(element.name);
                 
                 button.addEventListener("click", (event) => {
-                    console.log("Set tag to: ", textNode);
-                    token.innerHTML = textNode.textContent;
+                    if(callback){
+                        callback(textNode.textContent)
+                    }
+                    //console.log("Set tag to: ", textNode);
+                    //token.innerHTML = textNode.textContent;
                     killPredictive();
 
-                    updateEditor(token);
+                    /*updateEditor(token);
                     updatePreview(edit);
-                    validateDoc()
+                    validateDoc()*/
                     
                 }, {once: true})
 
@@ -679,7 +724,6 @@
                 return li
             })
 
-            console.log("nodeBox.bottom:", nodeBox.bottom)
             predictive.style.top = `${nodeBox.bottom}px`;
             predictive.style.left = `${nodeBox.left}px`;
             predictive.replaceChildren(...listItems);
@@ -722,17 +766,42 @@
             const key = event.key;
             const anchorNode = selection.anchorNode;
             const caret = getCaret();
+            const metaKey = event.metaKey;
+            const altKey = event.altKey;
+            const shiftKey = event.shiftKey;
+            const ctrlKey = event.ctrlKey;
+            const nonWhiteSpace = key.match(/^\S$/);
+            const enterKey = (key === "Enter")
+            const delKey = (key === "Backspace" || key === "Delete")
+
+            const typeKey = ((nonWhiteSpace || enterKey || delKey)
+                                && !metaKey
+                                && !altKey
+                                && !ctrlKey) ? true : false
+            /*console.group("KEYUP", typeKey)
+            console.log("nonWhiteSpace:", nonWhiteSpace)
+            console.log("enterKey:", enterKey)
+            console.log("delKey:", delKey)
+            console.log("metaKey:", metaKey)
+            console.log("altKey:", altKey)
+            console.log("ctrlKey:", ctrlKey)
+            console.groupEnd();*/
+
+            if(typeKey) {
+                dispatchTypeUp();
+            }
+
 
             const navButtons = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]
             const isNav = navButtons.find(navKey => navKey === key);
             if(isNav){
                 dispatchNav();
             } else {
-                if(caret.token && caret.token.classList && caret.token.classList.contains("html-nodename")){
+                /*if(caret.token && caret.token.classList && caret.token.classList.contains("html-nodename")){
                     predictiveTagName({...caret})
                 } else {
                     killPredictive();
-                }
+                }*/
             }
             
 
@@ -741,13 +810,26 @@
 
         let previousNavCaret = null
 
-        const dispatchType = () => {
-            const caret = getCaret();
+        const dispatchTypeDown = () => {
+            const detail = getCaret();
+            detail.type = "typedown";
 
-            caret.target.dispatchEvent(
-                new CustomEvent("type", {
+            detail.target.dispatchEvent(
+                new CustomEvent("typedown", {
                     bubbles: true,
-                    detail: caret,
+                    detail: detail,
+                })
+            )
+        }
+
+        const dispatchTypeUp = () => {
+            const detail = getCaret();
+            detail.type = "typeup";
+
+            detail.target.dispatchEvent(
+                new CustomEvent("typeup", {
+                    bubbles: true,
+                    detail: detail,
                 })
             )
         }
@@ -782,7 +864,7 @@
         })
 
         edit.addEventListener("keydown", (event) => {
-            
+            //console.log(event)
             const metaKey = event.metaKey;
             const altKey = event.altKey;
             const shiftKey = event.shiftKey;
@@ -793,15 +875,23 @@
             const caret = getCaret()
             const nonWhiteSpace = key.match(/^\S$/);
             const enterKey = (key === "Enter")
-            const delKey = (key === "Backspace")
+            const delKey = (key === "Backspace" || key === "Delete")
 
             const typeKey = ((nonWhiteSpace || enterKey || delKey)
                                 && !metaKey
                                 && !altKey
                                 && !ctrlKey) ? true : false
+            /*console.group("KEYDOWN", typeKey)
+            console.log("nonWhiteSpace:", nonWhiteSpace)
+            console.log("enterKey:", enterKey)
+            console.log("delKey:", delKey)
+            console.log("metaKey:", metaKey)
+            console.log("altKey:", altKey)
+            console.log("ctrlKey:", ctrlKey)
+            console.groupEnd();*/
 
             if(typeKey) {
-                dispatchType();
+                dispatchTypeDown();
             }
 
             switch(key){
@@ -843,7 +933,7 @@
 
 
             if(ctrlKey && key.toLowerCase() === "z"){
-                console.group("GET HISTORY")
+                /*console.group("GET HISTORY")
                 console.log("history:", history)
                 console.log("redo:", redo)
                 console.groupEnd();
@@ -880,7 +970,7 @@
                     } else {
                         console.log("NO UNDO.")
                     }
-                }
+                }*/
 
                 
             }
@@ -889,7 +979,7 @@
         const previewWindow = preview.contentWindow;
 
 
-        const wrapToken = (plaintext, classes, actions = null) => {
+        const wrapTokenDELETE = (plaintext, classes, actions = null) => {
             const wrapper = document.createElement("span")
             wrapper.classList.add(...classes, "token")
 
@@ -898,6 +988,21 @@
             }
             
             const textNode = document.createTextNode(plaintext);
+
+            wrapper.append(textNode);
+
+            return wrapper
+        }
+
+        const wrapToken = ({textContent, classes, eventListeners = null} = {}) => {
+            const wrapper = document.createElement("span")
+            wrapper.classList.add(...classes, "token")
+
+            if(eventListeners){
+                wrapper.dataset.eventListeners = JSON.stringify(eventListeners); 
+            }
+            
+            const textNode = document.createTextNode(textContent);
 
             wrapper.append(textNode);
 
@@ -955,12 +1060,52 @@
                 
             }
 
-            if(closingTokenTextContent && endNode.textContent !== closingTokenTextContent){
+            if(!endNode || (closingTokenTextContent && endNode.textContent !== closingTokenTextContent)){
                 return null
             }
 
             return endNode
         }
+
+
+        const findClosingToken2 = (startToken, openingTokenType, closingTokenType, closingTokenTextContent) => {
+            let walkNode = startToken.nextSibling || parentNextSibling(startToken);
+            let nest = 0;
+            let endNode = null;
+
+            while (walkNode) {
+                const classList = walkNode.classList;
+
+                if(classList){
+
+                    if(classList.contains(openingTokenType) && walkNode.textContent === closingTokenTextContent){
+                        nest++;
+                    } else if(classList.contains(closingTokenType) && walkNode.textContent === closingTokenTextContent){
+
+                        if(nest === 0){
+                            endNode = walkNode;
+                            break;
+                        } else {
+                            nest--;
+                        }
+
+                    }
+
+                }
+
+                walkNode = walkNode.nextSibling || parentNextSibling(walkNode);
+
+                
+            }
+
+            if(!endNode || (closingTokenTextContent && endNode.textContent !== closingTokenTextContent)){
+                return null
+            }
+
+            return endNode
+        }
+
+        
 
         const findOpeningToken = (endToken, openingTokenType, closingTokenType, openingTokenTextContent) => {
             let walkNode = endToken.previousSibling || parentPreviousSibling(endToken);
@@ -991,7 +1136,7 @@
                 
             }
 
-            if(openingTokenTextContent && startNode.textContent !== openingTokenTextContent){
+            if(!startNode || (openingTokenTextContent && startNode.textContent !== openingTokenTextContent)){
                 return null
             }
 
@@ -1734,45 +1879,353 @@ experimental: false,
             }
         ]
 
-        
-
-
-        const actions = [{
+        /*const htmltesthtml = wrapToken(
+            opentag,
+            ["html-nodename", `html-opening-tag`],
+            {
+                id: "htmlnodename",
+                actions: [
+                    {
+                        type: "navigateenter",
+                        params: {
+                            openingTokenType: "html-opening-tag",
+                            closingTokenType: "html-closing-tag",
+                            closingTokenTextContent: opentag
+                        }
+                    }
+                ]
+            },
+            [{
+                type:["type"],
                 name: "autopredict-tagname",
+                params: {
+                    openingTokenType: "html-opening-tag",
+                    closingTokenType: "html-closing-tag",
+                    closingTokenTextContent: opentag
+                }
+            },{
+                type:["navigateenter", "navigateleave"],
+                name: "highlight-closing-tag",
+                params: {
+                    openingTokenType: "html-opening-tag",
+                    closingTokenType: "html-closing-tag",
+                    closingTokenTextContent: opentag
+                }
+            }]
+        ).outerHTML
+
+        const actions2 = [{
+            id: "htmlnodename",
+            callbacks: {
+                onnavigateenter: (event) => {},
+                onnavigateleave: (event) => {},
+                ontype: (event) => {},
+            }
+        }]*/
+
+        /*const docClick = (event) => {}
+        const docMouseOver = (event) => {}
+
+        document.addEventListener("click", docClick)
+        document.addEventListener("mouseover", docMouseOver)
+
+
+        <span
+            data-onclick="docClick"
+            data-onclick-params="{data:'here'}"
+
+        const actions3 = {
+            "docClick": (data) => {
+
+            }
+        }*/
+
+        const eventListeners = {
+            highlightBounds: (event, params) => {
+                // Look for js-quote on left & right
+                const leftElement = event.token.previousElementSibling;
+                const rightElement = event.token.nextElementSibling;
+
+                if(leftElement && leftElement.classList && leftElement.classList.contains(params.openBound)){
+                    leftElement.classList.add("highlight-value-start")
+                }
+
+                if(rightElement && rightElement.classList && rightElement.classList.contains(params.closeBound)){
+                    rightElement.classList.add("highlight-value-end")
+                }
+
+
+                event.token.classList.add("highlight-value")
+            },
+            removeHighlightBounds: (event, params) => {
+                // Look for js-quote on left & right
+                const leftQuote = event.token.previousElementSibling;
+                const rightQuote = event.token.nextElementSibling;
+
+                leftQuote.classList.remove("highlight-value-start")
+                event.token.classList.remove("highlight-value")
+                rightQuote.classList.remove("highlight-value-end")
+            },
+            highlightValue: (event, params) => {
+                let walkTag = event.token.nextSibling || parentNextSibling(event.token);
+                let openingToken = null;
+                let closingToken = null;
+                let valueNodes = [];
+                let nest = 0;
+
+                while(walkTag) {
+                    if(openingToken){
+                        valueNodes.push(walkTag);
+                    }
+
+                    const classList = walkTag.classList;
+
+                    if(classList){
+
+                        if(classList.contains(params.openingTokenType)){
+
+                            if(!openingToken){
+                                openingToken = walkTag;
+                                valueNodes.push(walkTag);
+                            } else {
+                                nest ++;
+                            }
+
+                        }
+
+                        if(classList.contains(params.closingTokenType)){
+
+                            if(!closingToken){
+
+                                if(nest === 0){
+                                    closingToken = walkTag;
+                                    break;
+                                } else {
+                                    nest --;
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                    if(walkTag.nextSibling){
+                        walkTag = walkTag.nextElementSibling;
+                    } else {
+                        const line = getLine(walkTag);
+
+                        if(line.element.nextElementSibling && line.element.nextElementSibling.firstChild){
+                            walkTag = line.element.nextElementSibling.firstChild;
+                        } else {
+                            walkTag = null;
+                        }
+                    }
+
+                }
+
+                valueNodes.forEach((node, index) => {
+                    const className = (index === 0)
+                                            ? "highlight-value-start"
+                                            : (index === valueNodes.length - 1)
+                                                ? "highlight-value-end"
+                                                : "highlight-value"
+                    
+                    node.classList.add(className)
+                })
+
+            },
+            removeHighlightValue: (event, params) => {
+                let walkTag = event.token.nextSibling || parentNextSibling(event.token);
+                let openingToken = null;
+                let closingToken = null;
+                let valueNodes = [];
+                let nest = 0;
+
+                while(walkTag) {
+                    if(openingToken){
+                        valueNodes.push(walkTag);
+                    }
+
+                    const classList = walkTag.classList;
+
+                    if(classList){
+
+                        if(classList.contains(params.openingTokenType)){
+
+                            if(!openingToken){
+                                openingToken = walkTag;
+                                valueNodes.push(walkTag);
+                            } else {
+                                nest ++;
+                            }
+
+                        }
+
+                        if(classList.contains(params.closingTokenType)){
+
+                            if(!closingToken){
+
+                                if(nest === 0){
+                                    closingToken = walkTag;
+                                    break;
+                                } else {
+                                    nest --;
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                    if(walkTag.nextSibling){
+                        walkTag = walkTag.nextElementSibling;
+                    } else {
+                        const line = getLine(walkTag);
+
+                        if(line.element.nextElementSibling && line.element.nextElementSibling.firstChild){
+                            walkTag = line.element.nextElementSibling.firstChild;
+                        } else {
+                            walkTag = null;
+                        }
+                    }
+
+                }
+
+                valueNodes.forEach((node, index) => {
+                    const className = (index === 0)
+                                            ? "highlight-value-start"
+                                            : (index === valueNodes.length - 1)
+                                                ? "highlight-value-end"
+                                                : "highlight-value"
+                    
+                    node.classList.remove(className)
+                })
+
+            },
+            matchTagPairNames: (event, params) => {
+
+                if(event.type === "typedown"){
+                    stopObserving()  
+                } else {
+                    
+                    const masterTagname = event.token.textContent;
+                    const tagPairId = event.token.dataset.tagPairId;
+                    const selector = `[data-tag-pair-position="${params.updatePosition}"][data-tag-pair-id="${tagPairId}"]`;
+                    const updateTag = edit.querySelector(selector)
+                    if(updateTag){
+                        updateTag.textContent = masterTagname;
+                        
+                    }
+                    validateDoc(event.parentLine.line)
+                    updatePreview(edit);
+                    startObserving()
+                }
+            },
+            suggestHTMLTagNames: (event, params) => {
+                predictiveTagName({
+                    token: event.token,
+                    parentLine: event.token.parentLine,
+                    callback: (selectedTagName) => {
+                        stopObserving()  
+                        const caretPosition = event.parentLine.caretPosition + selectedTagName.length - 1;
+
+                        event.token.textContent = selectedTagName;
+                        const tagPairId = event.token.dataset.tagPairId;
+                        const selector = `[data-tag-pair-position="end"][data-tag-pair-id="${tagPairId}"]`;
+                        const updateTag = edit.querySelector(selector)
+                        if(updateTag){
+                            updateTag.textContent = selectedTagName;
+                            
+                        }
+                        if(tagPairId){
+                        const tagPair = edit.querySelectorAll(`[data-tag-pair-id='${tagPairId}']`)
+                        for(element of tagPair) {
+                            element.classList.remove("highlight")
+                        }
+                    }
+                        setCaretPosition({line: event.parentLine.line, caretPosition})
+                        validateDoc(event.parentLine.line)
+                        updatePreview(edit);
+                        startObserving();
+                        
+                    }
+                })
+            },
+            tagPairAddHighlight: (event, params) => {
+                const tagPairId = event.token.dataset.tagPairId;
+
+                if(tagPairId){
+                    const tagPair = edit.querySelectorAll(`[data-tag-pair-id='${tagPairId}']`)
+                    for(element of tagPair) {
+                        element.classList.add("highlight")
+                    }
+                }
+            },
+            tagPairRemoveHighlight: (event, params) => {
+                const tagPairId = event.token.dataset.tagPairId;
+
+                if(tagPairId){
+                    const tagPair = edit.querySelectorAll(`[data-tag-pair-id='${tagPairId}']`)
+                    for(element of tagPair) {
+                        element.classList.remove("highlight")
+                    }
+                }
+            },
+            highlightPairStart: (event, params) => {
+                const openingToken = findOpeningToken(event.token, params.openingTokenType, params.closingTokenType, params.openingTokenTextContent)
+
+                if(openingToken){
+                    event.token.classList.add("highlight")
+                    openingToken.classList.add("highlight")
+                } else {
+                    event.token.classList.add("highlight-error")
+
+                }
+            },
+            highlightPairEnd: (event, params) => {
+                const closingToken = findClosingToken(event.token, params.openingTokenType, params.closingTokenType, params.closingTokenTextContent)
+
+                if(closingToken){
+                    event.token.classList.add("highlight")
+                    closingToken.classList.add("highlight")
+                } else {
+                    event.token.classList.add("highlight-error")
+
+                }
+            },
+            removeHighlightPairStart: (event, params) => {
+                const openingToken = findOpeningToken(event.token, params.openingTokenType, params.closingTokenType, params.openingTokenTextContent)
+
+                if(openingToken){
+                    event.token.classList.remove("highlight")
+                    openingToken.classList.remove("highlight")
+                } else {
+                    event.token.classList.remove("highlight-error")
+
+                }
+            },
+            removeHighlightPairEnd: (event, params) => {
+                const closingToken = findClosingToken(event.token, params.openingTokenType, params.closingTokenType, params.closingTokenTextContent)
+
+                if(closingToken){
+                    event.token.classList.remove("highlight")
+                    closingToken.classList.remove("highlight")
+                } else {
+                    event.token.classList.remove("highlight-error")
+
+                }
+            } 
+        }
+
+        const actions = [
+            {
+                id: "pairclose",
                 callbacks: {
                     "type": (event) => {
-                        console.log("&&&&&&&&&&&&&&&&&&&&&&")
-                    }
-                }
-            },{
-                name: "highlight-closing-tag",
-                callbacks: {
-                    "navigateenter": (event) => {
-                        const closingToken = findClosingToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.closingTokenTextContent)
-
-                        if(closingToken){
-                            event.token.classList.add("highlight")
-                            closingToken.classList.add("highlight")
-                        } else {
-                            event.token.classList.add("highlight-error")
-
-                        }
+                        console.log("Change opening tag to this value")
                     },
-                    "navigateleave": (event) => {
-                        const closingToken = findClosingToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.closingTokenTextContent)
-
-                        if(closingToken){
-                            event.token.classList.remove("highlight")
-                            closingToken.classList.remove("highlight")
-                        } else {
-                            event.token.classList.remove("highlight-error")
-
-                        }
-                    }
-                }
-            },{
-                name: "highlight-opening-tag",
-                callbacks: {
                     "navigateenter": (event) => {
                         const openingToken = findOpeningToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.openingTokenTextContent)
 
@@ -1790,6 +2243,35 @@ experimental: false,
                         if(openingToken){
                             event.token.classList.remove("highlight")
                             openingToken.classList.remove("highlight")
+                        } else {
+                            event.token.classList.remove("highlight-error")
+
+                        }
+                    }
+                }
+            },{
+                id: "pairopen",
+                callbacks: {
+                    "type": (event) => {
+                        console.log("Change closing tag to this value")
+                    },
+                    "navigateenter": (event) => {
+                        const closingToken = findClosingToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.closingTokenTextContent)
+
+                        if(closingToken){
+                            event.token.classList.add("highlight")
+                            closingToken.classList.add("highlight")
+                        } else {
+                            event.token.classList.add("highlight-error")
+
+                        }
+                    },
+                    "navigateleave": (event) => {
+                        const closingToken = findClosingToken(event.token, event.params.openingTokenType, event.params.closingTokenType, event.params.closingTokenTextContent)
+
+                        if(closingToken){
+                            event.token.classList.remove("highlight")
+                            closingToken.classList.remove("highlight")
                         } else {
                             event.token.classList.remove("highlight-error")
 
@@ -1817,8 +2299,8 @@ experimental: false,
                 name: "selectors",
                 re: /(?<cssSpacer> *)(?<selector>[\w:> ()-]+)(?= {|,)/g,
                 replacerFn: ({cssSpacer, selector} = {}) => {
-                    let html = wrapToken(" ".repeat(cssSpacer.length), ["css-spacer"]).outerHTML;
-                    html += wrapToken(selector, ["css-selector"]).outerHTML;
+                    let html = wrapToken({textContent: " ".repeat(cssSpacer.length), classes: ["css-spacer"]}).outerHTML;
+                    html += wrapToken({textContent: selector, classes: ["css-selector"]}).outerHTML;
                     return html
                 }
             },{
@@ -1826,7 +2308,7 @@ experimental: false,
                 name: "css_properties",
                 re: /(?<cssProperty>[\w-]+)(?= *:)/g,
                 replacerFn: ({cssProperty} = {}) => {
-                    let html = wrapToken(cssProperty, ["css-property"]).outerHTML;
+                    let html = wrapToken({textContent: cssProperty, classes: ["css-property"]}).outerHTML;
                     return html
                 }
             },{
@@ -1834,7 +2316,7 @@ experimental: false,
                 name: "css_values",
                 re:  /(?<cssValue>[^:]+)(?= *;)/g,
                 replacerFn: ({cssValue} = {}) => {
-                    let html = wrapToken(cssValue, ["css-value"]).outerHTML;
+                    let html = wrapToken({textContent: cssValue, classes: ["css-value"]}).outerHTML;
                     return html
                 }
             },{
@@ -1842,7 +2324,25 @@ experimental: false,
                 name: "css_curly_open",
                 re:  /(?<curlyBraceOpen>{)/g,
                 replacerFn: ({curlyBraceOpen} = {}) => {
-                    let html = wrapToken(curlyBraceOpen, ["css-curly-open"]).outerHTML;
+                    let html = wrapToken({
+                        textContent: curlyBraceOpen,
+                        classes: ["css-curly-open"],
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightPairEnd",
+                            params: {
+                                openingTokenType: "css-curly-open",
+                                closingTokenType: "css-curly-close",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightPairEnd",
+                            params: {
+                                openingTokenType: "css-curly-open",
+                                closingTokenType: "css-curly-close",
+                                }
+                        }]
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -1850,7 +2350,25 @@ experimental: false,
                 name: "css_curly_close",
                 re: /(?<curlyBraceClose>})/g,
                 replacerFn: ({curlyBraceClose} = {}) => {
-                    let html = wrapToken(curlyBraceClose, ["css-curly-close"]).outerHTML;
+                    let html = wrapToken({
+                        textContent: curlyBraceClose,
+                        classes: ["css-curly-close"],
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightPairStart",
+                            params: {
+                                openingTokenType: "css-curly-open",
+                                closingTokenType: "css-curly-close",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightPairStart",
+                            params: {
+                                openingTokenType: "css-curly-open",
+                                closingTokenType: "css-curly-close",
+                                }
+                            }]
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -1858,7 +2376,7 @@ experimental: false,
                 name: "colon",
                 re:  /(?<colon>:)/g,
                 replacerFn: ({colon} = {}, parser) => {
-                    let html = wrapToken(colon, ["css-colon"]).outerHTML;
+                    let html = wrapToken({textContent: colon, classes: ["css-colon"]}).outerHTML;
 
                     return html
 
@@ -1868,7 +2386,7 @@ experimental: false,
                 name: "semiColon",
                 re:  /(?<semiColon>;)/g,
                 replacerFn: ({semiColon} = {}, parser) => {
-                    let html = wrapToken(semiColon, ["css-semi-colon"]).outerHTML;
+                    let html = wrapToken({textContent: semiColon, classes: ["css-semi-colon"]}).outerHTML;
 
                     return html
 
@@ -1880,7 +2398,7 @@ experimental: false,
                 replacerFn: ({multilineComments} = {}) => {
                     let html = multilineComments
                                     .split("\n")
-                                    .map((line) => wrapToken(line, ["js-multiline-comment"]).outerHTML)
+                                    .map((line) => wrapToken({textContent: line, classes: ["js-multiline-comment"]}).outerHTML)
                                     .join("\n")
                     return html
                 }
@@ -1889,7 +2407,7 @@ experimental: false,
                 name: "singleLineComment",
                 re: /(?<singleLineComment>\/\/.*)/g,
                 replacerFn: ({singleLineComment} = {}) => {
-                    let html = wrapToken(singleLineComment, ["js-comment"]).outerHTML;
+                    let html = wrapToken({textContent: singleLineComment, classes: ["js-comment"]}).outerHTML;
                     return html
                 }
             },{
@@ -1899,38 +2417,70 @@ experimental: false,
                 replacerFn: ({stringLiteral} = {}) => {
                     const variableRe = /\${ *(?<variable>[\w.\[\]"']*) *}/g;
 
-                    let html = wrapToken("`", ["js-backtick"]).outerHTML;
+                    let html = wrapToken({textContent: "`", classes: ["js-backtick"]}).outerHTML;
 
-                    html += wrapToken(stringLiteral, ["js-literal-value"]).outerHTML;
-                    html += wrapToken("`", ["js-backtick"]).outerHTML;
+                    html += wrapToken({textContent: stringLiteral, classes: ["js-literal-value"]}).outerHTML;
+                    html += wrapToken({textContent: "`", classes: ["js-backtick"]}).outerHTML;
 
                     html = html.replace(variableRe, (match, variable) => {
-                        let _html = wrapToken("$", ["js-literal-dollar"]).outerHTML;
-                        _html += wrapToken(
-                            "{",
-                            ["js-literal-curly-open"],
-                            [{
-                                type:["navigateenter", "navigateleave"],
-                                name: "highlight-closing-tag",
+                        let _html = wrapToken({
+                            textContent: "$",
+                            classes: ["js-literal-dollar"],
+                            eventListeners: [{
+                                type: "navigateenter",
+                                id: "highlightValue",
                                 params: {
                                     openingTokenType: "js-literal-curly-open",
-                                    closingTokenType: "js-literal-curly-close"
+                                    closingTokenType: "js-literal-curly-close",
                                 }
-                            }]
-                        ).outerHTML;
-                        _html += wrapToken(variable, ["js-literal-variable"]).outerHTML;
-                        _html += wrapToken(
-                            "}",
-                            ["js-literal-curly-close"],
-                            [{
-                                type:["navigateenter", "navigateleave"],
-                                name: "highlight-opening-tag",
+                            },{
+                                type: "navigateleave",
+                                id: "removeHighlightValue",
                                 params: {
                                     openingTokenType: "js-literal-curly-open",
-                                    closingTokenType: "js-literal-curly-close"
+                                    closingTokenType: "js-literal-curly-close",
                                 }
                             }]
-                        ).outerHTML;
+                        }).outerHTML;
+                        _html += wrapToken({
+                            textContent: "{",
+                            classes: ["js-literal-curly-open"],
+                            eventListeners: [{
+                                type: "navigateenter",
+                                id: "highlightPairEnd",
+                                params: {
+                                    openingTokenType: "js-literal-curly-open",
+                                    closingTokenType: "js-literal-curly-close",
+                                }
+                            },{
+                                type: "navigateleave",
+                                id: "removeHighlightPairEnd",
+                                params: {
+                                    openingTokenType: "js-literal-curly-open",
+                                    closingTokenType: "js-literal-curly-close",
+                                }
+                            }]
+                        }).outerHTML;
+                        _html += wrapToken({textContent: variable, classes: ["js-literal-variable"]}).outerHTML;
+                        _html += wrapToken({
+                            textContent: "}",
+                            classes: ["js-literal-curly-close"],
+                            eventListeners: [{
+                                type: "navigateenter",
+                                id: "highlightPairStart",
+                                params: {
+                                    openingTokenType: "js-literal-curly-open",
+                                    closingTokenType: "js-literal-curly-close",
+                                }
+                            },{
+                                type: "navigateleave",
+                                id: "removeHighlightPairStart",
+                                params: {
+                                    openingTokenType: "js-literal-curly-open",
+                                    closingTokenType: "js-literal-curly-close",
+                                }
+                            }]
+                        }).outerHTML;
 
                         return _html;
                     })
@@ -1943,7 +2493,25 @@ experimental: false,
                 name: "string",
                 re: /(?<string>((?<=')(?:[^'].*)(?='))|(?<=\")(?:[^\"].*)(?=\"))/g,
                 replacerFn: ({string} = {}) => {
-                    let html = wrapToken(string, ["js-string"]).outerHTML;
+                    let html = wrapToken({
+                        textContent: string,
+                        classes: ["js-string"],
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightBounds",
+                            params: {
+                                openBound: "js-quote",
+                                closeBound: "js-quote",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightBounds",
+                            params: {
+                                openBound: "js-quote",
+                                closeBound: "js-quote",
+                            }
+                        }]
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -1951,7 +2519,7 @@ experimental: false,
                 name: "jsonProperty",
                 re: /(?!")(?<jsonProp>[\w]+(?="* *:))/g,
                 replacerFn: ({jsonProp} = {}) => {
-                    let html = wrapToken(jsonProp, ["json-prop"]).outerHTML;
+                    let html = wrapToken({textContent: jsonProp, classes: ["json-prop"]}).outerHTML;
                     return html
                 }
             },{
@@ -1963,7 +2531,7 @@ experimental: false,
                         ? "js-private-property"
                         : "js-property"
 
-                    let html = wrapToken(jsProperty, [className]).outerHTML;
+                    let html = wrapToken({textContent: jsProperty, classes: [className]}).outerHTML;
                     return html
                 }
             },{
@@ -1971,7 +2539,25 @@ experimental: false,
                 name: "methodName",
                 re: /(?<methodName>#{0,1}[\w]+ *)(?=\()/g,
                 replacerFn: ({methodName} = {}) => {
-                    let html = wrapToken(methodName, ["js-method-name"]).outerHTML;
+                    let html = wrapToken({
+                        textContent: methodName,
+                        classes: ["js-method-name"],
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightValue",
+                            params: {
+                                openingTokenType: "js-bracket-open",
+                                closingTokenType: "js-bracket-close",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightValue",
+                            params: {
+                                openingTokenType: "js-bracket-open",
+                                closingTokenType: "js-bracket-close",
+                            }
+                        }]
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -1979,7 +2565,7 @@ experimental: false,
                 name: "symbol",
                 re: /(?<symbol>=>|[;=:,<+-])/g,
                 replacerFn: ({symbol} = {}) => {
-                    let html = wrapToken(symbol, ["js-symbol"]).outerHTML;
+                    let html = wrapToken({textContent: symbol, classes: ["js-symbol"]}).outerHTML;
                     return html
                 }
             },{
@@ -1987,18 +2573,25 @@ experimental: false,
                 name: "openingCurlyBrace",
                 re: /(?<openingCurlyBrace>{)/g,
                 replacerFn: ({openingCurlyBrace} = {}) => {
-                    let html = wrapToken(
-                        "{",
-                        ["js-curly-brace-open"], 
-                        [{
-                            type:["navigateenter", "navigateleave"],
-                            name: "highlight-closing-tag",
+                    let html = wrapToken({
+                        textContent: "{",
+                        classes: ["js-curly-brace-open"], 
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightPairEnd",
                             params: {
                                 openingTokenType: "js-curly-brace-open",
-                                closingTokenType: "js-curly-brace-close"
+                                closingTokenType: "js-curly-brace-close",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightPairEnd",
+                            params: {
+                                openingTokenType: "js-curly-brace-open",
+                                closingTokenType: "js-curly-brace-close",
                             }
                         }]
-                    ).outerHTML;
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -2006,18 +2599,25 @@ experimental: false,
                 name: "closingCurlyBrace",
                 re: /(?<closingCurlyBrace>})/g,
                 replacerFn: ({closingCurlyBrace} = {}) => {
-                    let html = wrapToken(
-                        "}",
-                        ["js-curly-brace-close"], 
-                        [{
-                            type:["navigateenter", "navigateleave"],
-                            name: "highlight-opening-tag",
+                    let html = wrapToken({
+                        textContent: "}",
+                        classes: ["js-curly-brace-close"], 
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightPairStart",
                             params: {
                                 openingTokenType: "js-curly-brace-open",
-                                closingTokenType: "js-curly-brace-close"
+                                closingTokenType: "js-curly-brace-close",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightPairStart",
+                            params: {
+                                openingTokenType: "js-curly-brace-open",
+                                closingTokenType: "js-curly-brace-close",
                             }
                         }]
-                    ).outerHTML;
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -2025,18 +2625,25 @@ experimental: false,
                 name: "openingBracket",
                 re: /(?<openingBracket>\()/g,
                 replacerFn: ({openingBracket} = {}) => {
-                    let html = wrapToken(
-                        "(",
-                        ["js-bracket-open"], 
-                        [{
-                            type:["navigateenter", "navigateleave"],
-                            name: "highlight-closing-tag",
+                    let html = wrapToken({
+                        textContent: "(",
+                        classes: ["js-bracket-open"], 
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightPairEnd",
                             params: {
                                 openingTokenType: "js-bracket-open",
-                                closingTokenType: "js-bracket-close"
+                                closingTokenType: "js-bracket-close",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightPairEnd",
+                            params: {
+                                openingTokenType: "js-bracket-open",
+                                closingTokenType: "js-bracket-close",
                             }
                         }]
-                    ).outerHTML;
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -2044,18 +2651,25 @@ experimental: false,
                 name: "closingBracket",
                 re: /(?<closingBracket>\))/g,
                 replacerFn: ({closingBracket} = {}) => {
-                    let html = wrapToken(
-                        ")",
-                        ["js-bracket-close"], 
-                        [{
-                            type:["navigateenter", "navigateleave"],
-                            name: "highlight-opening-tag",
+                    let html = wrapToken({
+                        textContent: ")",
+                        classes: ["js-bracket-close"], 
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightPairStart",
                             params: {
                                 openingTokenType: "js-bracket-open",
-                                closingTokenType: "js-bracket-close"
+                                closingTokenType: "js-bracket-close",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightPairStart",
+                            params: {
+                                openingTokenType: "js-bracket-open",
+                                closingTokenType: "js-bracket-close",
                             }
                         }]
-                    ).outerHTML;
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -2063,18 +2677,25 @@ experimental: false,
                 name: "openingSquareBracket",
                 re: /(?<openingSquareBracket>\[)/g,
                 replacerFn: ({openingSquareBracket} = {}) => {
-                    let html = wrapToken(
-                        "[",
-                        ["js-square-bracket-open"], 
-                        [{
-                            type:["navigateenter", "navigateleave"],
-                            name: "highlight-closing-tag",
+                    let html = wrapToken({
+                        textContent: "[",
+                        classes: ["js-square-bracket-open"], 
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightPairEnd",
                             params: {
                                 openingTokenType: "js-square-bracket-open",
-                                closingTokenType: "js-square-bracket-close"
+                                closingTokenType: "js-square-bracket-close",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightPairEnd",
+                            params: {
+                                openingTokenType: "js-square-bracket-open",
+                                closingTokenType: "js-square-bracket-close",
                             }
                         }]
-                    ).outerHTML;
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -2082,18 +2703,25 @@ experimental: false,
                 name: "closingSquareBracket",
                 re: /(?<closingSquareBracket>\])/g,
                 replacerFn: ({closingSquareBracket} = {}) => {
-                    let html = wrapToken(
-                        "]",
-                        ["js-square-bracket-close"], 
-                        [{
-                            type:["navigateenter", "navigateleave"],
-                            name: "highlight-opening-tag",
+                    let html = wrapToken({
+                        textContent: "]",
+                        classes: ["js-square-bracket-close"], 
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightPairStart",
                             params: {
                                 openingTokenType: "js-square-bracket-open",
-                                closingTokenType: "js-square-bracket-close"
+                                closingTokenType: "js-square-bracket-close",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightPairStart",
+                            params: {
+                                openingTokenType: "js-square-bracket-open",
+                                closingTokenType: "js-square-bracket-close",
                             }
                         }]
-                    ).outerHTML;
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -2101,7 +2729,10 @@ experimental: false,
                 name: "jsQuotes",
                 re: /(?<jsQuote>['\"])/g,
                 replacerFn: ({jsQuote} = {}) => {
-                    let html = wrapToken(jsQuote, ["js-quote"]).outerHTML;
+                    let html = wrapToken({
+                        textContent: jsQuote,
+                        classes: ["js-quote"]
+                    }).outerHTML;
                     return html
                 }
             },{
@@ -2109,7 +2740,7 @@ experimental: false,
                 name: "keyword",
                 re: /(?<keyword>\bconst|let|var|static|class\b)/g,
                 replacerFn: ({keyword} = {}) => {
-                    let html = wrapToken(keyword, ["js-keyword", `js-keyword-${keyword}`]).outerHTML;
+                    let html = wrapToken({textContent: keyword, classes: ["js-keyword", `js-keyword-${keyword}`]}).outerHTML;
                     return html
                 }
             },{
@@ -2117,7 +2748,7 @@ experimental: false,
                 name: "path",
                 re: /(?<path>[\w]+\.)/g,
                 replacerFn: ({path} = {}) => {
-                    let html = wrapToken(path, ["js-path"]).outerHTML;
+                    let html = wrapToken({textContent: path, classes: ["js-path"]}).outerHTML;
                     return html
                 }
             },{
@@ -2129,7 +2760,7 @@ experimental: false,
                         ? "js-private-variable"
                         : "js-variable"
 
-                    let html = wrapToken(jsVariable, [className]).outerHTML;
+                    let html = wrapToken({textContent: jsVariable, classes: [className]}).outerHTML;
                     return html
                 }
             },{
@@ -2138,44 +2769,65 @@ experimental: false,
                 re: /(?<=<)(?<opentag>[\w-]+)|(?<=\/)(?<closetag>[\w-]+)/g,
                 replacerFn: ({opentag, closetag} = {}) => {
                     let html = "";
-
                     if(opentag){
-                        html = wrapToken(
-                            opentag,
-                            ["html-nodename", `html-opening-tag`],
-                            [{
-                                type:["type"],
-                                name: "autopredict-tagname",
+                        html = wrapToken({
+                            textContent: opentag,
+                            classes: ["html-nodename", `html-opening-tag`],
+                            eventListeners: [{
+                                type: "typedown",
+                                id: "matchTagPairNames",
                                 params: {
-                                    openingTokenType: "html-opening-tag",
-                                    closingTokenType: "html-closing-tag",
-                                    closingTokenTextContent: opentag
                                 }
                             },{
-                                type:["navigateenter", "navigateleave"],
-                                name: "highlight-closing-tag",
+                                type: "typeup",
+                                id: "matchTagPairNames",
                                 params: {
-                                    openingTokenType: "html-opening-tag",
-                                    closingTokenType: "html-closing-tag",
-                                    closingTokenTextContent: opentag
+                                    updatePosition: "end"
+                                }
+                            },{
+                                type: "typeup",
+                                id: "suggestHTMLTagNames",
+                                params: {}
+                            },{
+                                type: "navigateenter",
+                                id: "tagPairAddHighlight",
+                                params: {
+                                }
+                            },{
+                                type: "navigateleave",
+                                id: "tagPairRemoveHighlight",
+                                params: {
                                 }
                             }]
-                        ).outerHTML
+                        }).outerHTML
                             
                     } else if (closetag){
-                        html = wrapToken(
-                            closetag,
-                            ["html-nodename", "html-closing-tag"],
-                            [{
-                                type:["navigateenter", "navigateleave"],
-                                name: "highlight-opening-tag",
+                        html = wrapToken({
+                            textContent: closetag,
+                            classes: ["html-nodename", `html-closing-tag`],
+                            eventListeners: [{
+                                type: "typedown",
+                                id: "matchTagPairNames",
                                 params: {
-                                    openingTokenType: "html-opening-tag",
-                                    closingTokenType: "html-closing-tag",
-                                    openingTokenTextContent: closetag
+                                }
+                            },{
+                                type: "typeup",
+                                id: "matchTagPairNames",
+                                params: {
+                                    updatePosition: "start"
+                                }
+                            },{
+                                type: "navigateenter",
+                                id: "tagPairAddHighlight",
+                                params: {
+                                }
+                            },{
+                                type: "navigateleave",
+                                id: "tagPairRemoveHighlight",
+                                params: {
                                 }
                             }]
-                        ).outerHTML
+                        }).outerHTML
 
                     }
                    
@@ -2186,20 +2838,74 @@ experimental: false,
                 name: "attributes",
                 re: /(?!<[^<]* )(?<attrName>[\w\-]*)(?<spacer_1> *)=(?<spacer_2> *)(?:(?:(?<quoteType>["'])(?<stringValue>[\/\w.,=* \-]*)\k<quoteType>)|(?<value>[\w\-.]+))/g,
                 replacerFn: ({attrName, spacer_1, spacer_2, quoteType, stringValue, value} = {}) => {
-                    let html = wrapToken(attrName, ["html-attr-name"]).outerHTML;
+                    let html = wrapToken({textContent: attrName, classes: ["html-attr-name"]}).outerHTML;
 
-                    html += wrapToken(spacer_1, ["html-spacer"]).outerHTML
-                    html += wrapToken("=", ["html-equal-sign"]).outerHTML
-                    html += wrapToken(spacer_2, ["html-spacer"]).outerHTML
+                    html += wrapToken({textContent: spacer_1, classes: ["html-spacer"]}).outerHTML
+                    html += wrapToken({textContent: "=", classes: ["html-equal-sign"]}).outerHTML
+                    html += wrapToken({textContent: spacer_2, classes: ["html-spacer"]}).outerHTML
 
                     if(quoteType){
-                        html += wrapToken(quoteType, ["html-attr-quote-open"]).outerHTML
+                        html += wrapToken({
+                            textContent: quoteType,
+                            classes: ["html-attr-quote-open"],
+                            eventListeners: [{
+                                type: "navigateenter",
+                                id: "highlightPairEnd",
+                                params: {
+                                    openingTokenType: "html-attr-quote-open",
+                                    closingTokenType: "html-attr-quote-close",
+                                }
+                            },{
+                                type: "navigateleave",
+                                id: "removeHighlightPairEnd",
+                                params: {
+                                    openingTokenType: "html-attr-quote-open",
+                                    closingTokenType: "html-attr-quote-close",
+                                    }
+                            }]
+                        }).outerHTML
                     }
 
-                    html += wrapToken(stringValue||value, ["html-attr-value"]).outerHTML
+                    html += wrapToken({
+                        textContent: stringValue||value,
+                        classes: ["html-attr-value"],
+                        eventListeners: [{
+                            type: "navigateenter",
+                            id: "highlightBounds",
+                            params: {
+                                openBound: "html-attr-quote-open",
+                                closeBound: "html-attr-quote-close",
+                            }
+                        },{
+                            type: "navigateleave",
+                            id: "removeHighlightBounds",
+                            params: {
+                                openBound: "html-attr-quote-open",
+                                closeBound: "html-attr-quote-close",
+                            }
+                        }]
+                    }).outerHTML
 
                     if(quoteType){
-                        html += wrapToken(quoteType, ["html-attr-quote-close"]).outerHTML
+                        html += wrapToken({
+                            textContent: quoteType,
+                            classes: ["html-attr-quote-close"],
+                            eventListeners: [{
+                                type: "navigateenter",
+                                id: "highlightPairStart",
+                                params: {
+                                    openingTokenType: "html-attr-quote-open",
+                                    closingTokenType: "html-attr-quote-close",
+                                }
+                            },{
+                                type: "navigateleave",
+                                id: "removeHighlightPairStart",
+                                params: {
+                                    openingTokenType: "html-attr-quote-open",
+                                    closingTokenType: "html-attr-quote-close",
+                                    }
+                            }]
+                        }).outerHTML
                     }
                     return html
                 }
@@ -2209,19 +2915,66 @@ experimental: false,
                 re: /(?<selfClosingBracket>\/>)|(?<closeTagLeftBracket><\/)(?=[\w]+>)|(?<openTagLeftBracket><)(?=[\w-]+)|(?!<[\s\S]*?)(?<rightBracket>>)/g,
                 replacerFn: ({selfClosingBracket, closeTagLeftBracket, openTagLeftBracket, rightBracket} = {}) => {
                     let html = "";
+                    const leftBracketListeners = [{
+                        type: "navigateenter",
+                        id: "highlightPairEnd",
+                        params: {
+                            openingTokenType: "html-bracket-left",
+                            closingTokenType: "html-bracket-right",
+                        }
+                    },{
+                        type: "navigateleave",
+                        id: "removeHighlightPairEnd",
+                        params: {
+                            openingTokenType: "html-bracket-left",
+                            closingTokenType: "html-bracket-right",
+                            }
+                    }];
 
+                    const rightBracketListeners = [{
+                        type: "navigateenter",
+                        id: "highlightPairStart",
+                        params: {
+                            openingTokenType: "html-bracket-left",
+                            closingTokenType: "html-bracket-right",
+                        }
+                    },{
+                        type: "navigateleave",
+                        id: "removeHighlightPairStart",
+                        params: {
+                            openingTokenType: "html-bracket-left",
+                            closingTokenType: "html-bracket-right",
+                            }
+                    }];
+                    
                     if(openTagLeftBracket){
-                        html += wrapToken("<", ["html-bracket-left"]).outerHTML
+                        html += wrapToken({
+                            textContent: "<",
+                            classes: ["html-bracket-left"],
+                            eventListeners: leftBracketListeners
+                        }).outerHTML
                     } else if(closeTagLeftBracket){
-                        html += wrapToken("<", ["html-bracket-right"]).outerHTML
-                        html += wrapToken("/", ["html-back-slash"]).outerHTML
+                        html += wrapToken({
+                            textContent: "<",
+                            classes: ["html-bracket-left"],
+                            eventListeners: leftBracketListeners
+                        }).outerHTML
+                        html += wrapToken({textContent: "/", classes: ["html-back-slash"]}).outerHTML
 
                     } else if(rightBracket){
-                        html += wrapToken(">", ["html-bracket-right"]).outerHTML
+                        html += wrapToken({
+                            textContent: ">",
+                            classes: ["html-bracket-right"],
+                            eventListeners: rightBracketListeners
+                        }).outerHTML
 
                     } else if(selfClosingBracket){
-                        html += wrapToken("/", ["html-back-slash"]).outerHTML
-                        html += wrapToken(">", ["html-bracket-right"]).outerHTML
+                        html += wrapToken({textContent: "/", classes: ["html-back-slash"]}).outerHTML
+                        html += wrapToken({
+                            textContent: ">",
+                            classes: ["html-bracket-right"],
+                            eventListeners: rightBracketListeners
+                        }).outerHTML
 
                     }
                     return html
@@ -2234,7 +2987,7 @@ experimental: false,
                     let classes = ["editor-whitespace", "editor-indent"];
                     let textContent = " ".repeat(lineIndent.length);
 
-                    let html = wrapToken(textContent, classes).outerHTML
+                    let html = wrapToken({textContent, classes}).outerHTML
 
                     return html
                 }
@@ -2462,6 +3215,10 @@ experimental: false,
             const actions = (token && token.dataset && token.dataset.actions)
                                 ? JSON.parse(token.dataset.actions)
                                 : null
+            
+            const eventListeners = (token && token.dataset && token.dataset.eventListeners)
+                                ? JSON.parse(token.dataset.eventListeners)
+                                : null
 
             
             const siblingToken = (nextCharToken)
@@ -2473,6 +3230,7 @@ experimental: false,
                     nextChar: parentLine.plaintext.charAt(parentLine.caretPosition + 1),
                     token: nextCharToken,
                     siblingToken: null,
+                    eventListeners: (nextCharToken.dataset && nextCharToken.dataset.eventListeners) ? JSON.parse(nextCharToken.dataset.eventListeners) : null,
                     actions: (nextCharToken.dataset && nextCharToken.dataset.actions) ? JSON.parse(nextCharToken.dataset.actions) : null
                 }
                 : null;
@@ -2485,6 +3243,7 @@ experimental: false,
                 nextChar,
                 token,
                 siblingToken,
+                eventListeners,
                 actions,
             }
         }
@@ -2583,7 +3342,6 @@ experimental: false,
 
 
         const observer = new MutationObserver((records, observer) => {
-
             if(records.length === 1 && records[0].addedNodes.length > 0){
                 //console.log("SYSTEM UPDATE")
 
@@ -2594,16 +3352,16 @@ experimental: false,
 
                 updateEditor(firstRecord);
                 updatePreview(edit);
-                validateDoc()
+                validateDoc();
 
                 // Add hsitory stuff to its own function or link to updateEditor()
-                const lines = Array.from(edit.querySelectorAll("li"));
+                /*const lines = Array.from(edit.querySelectorAll("li"));
                 const historyEntry = lines
                                         .map(line => line.textContent)
                                         .join("\n");
 
                 history.push(historyEntry)
-                redo = []
+                redo = []*/
 
                 
             }

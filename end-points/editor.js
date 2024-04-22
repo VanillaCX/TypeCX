@@ -30,7 +30,10 @@ router.get("/undoredo2", controller.undo_redo2)
 router.get("/undoredo3", controller.undo_redo3)
 router.get("/undoredo4", controller.undo_redo4)
 router.get("/undoredo5", controller.undo_redo5)
+router.get("/undoredo6", controller.undo_redo6)
+router.get("/undoredo7", controller.undo_redo7)
 router.get("/validate1", controller.validate1)
+router.get("/beta1", controller.beta1)
 
 
 module.exports = router

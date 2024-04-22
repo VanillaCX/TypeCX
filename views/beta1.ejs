@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        html {
+            background-color: red;;
+        }
+        body {
+            margin: 0;
+            background-color: yellow;
+        }
+
+        cx-app {
+            width: 100vw;
+            height: 100vh;
+
+            display: flex;
+            flex-direction: column;
+
+        }
+
+        cx-row {
+            display: flex;
+            background: pink;
+            flex: auto;
+            border: 3px solid red
+        }
+
+        cx-column {
+            display: flex;
+            border: 3px solid cyan;
+            flex: auto;
+            flex-direction: column;
+        }
+
+        cx-header {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        cx-menu {
+            display: flex;
+            flex-direction: row;
+        }
+
+        cx-menu-group {
+            display: flex;
+            flex-direction: row;;
+        }
+
+        cx-nav {
+            display: flex;
+            flex-direction: row;
+        }
+
+        cx-tabs {
+            display: flex;
+            flex-direction: row;
+        }
+
+        cx-tab {
+            display: flex;
+            flex: auto;
+            flex-direction: column;
+        }
+
+        cx-tab {
+            display: none;
+        }
+
+        cx-tab:first-child {
+            display: flex;
+        }
+
+        cx-view {
+            display: flex;
+        }
+
+        cx-button {
+            background-color: black;
+            color: white;
+        }
+
+        cx-button[selected] {
+            background-color: green;;
+        }
+
+        /*cx-menu {
+            border: 3px solid blue;
+        }
+
+        cx-nav {
+            border: 3px solid orange;
+        }
+
+        cx-tabs {
+            border: 3px solid purple;
+        }
+        cx-tab {
+            border: 3px solid peru;
+        }
+        cx-view {
+            border: 3px solid grey;
+        }
+
+        cx-button {
+            background-color: purple;;
+        }*/
+
+        #app-menu {
+        }
+    </style>
+</head>
+<body>
+
+    <cx-app>
+        <cx-header>
+            <cx-title>TypeCX</cx-title>
+            <cx-menu>
+                <cx-button>Open</cx-button>
+                <cx-button>Help</cx-button>
+            </cx-menu>
+        </cx-header>
+        <cx-row>
+            <cx-column>
+                <cx-row>
+                    <cx-column>
+                        <cx-header>
+                            <cx-nav>
+                                <cx-button selected>Tab One</cx-button>
+                                <cx-button>Tab Two</cx-button>
+                            </cx-nav>
+                            <cx-menu>
+                                <cx-menu-group>
+                                    <cx-button>Validate Doc</cx-button>
+                                    <cx-button>Go to line</cx-button>
+                                    <cx-button>Wrap lines</cx-button>
+                                </cx-menu-group>
+                                <cx-menu-group>
+                                    <cx-button>Split view</cx-button>
+                                    <cx-button>Close view</cx-button>
+                                </cx-menu-group>
+                            </cx-menu>
+                        </cx-header>
+                        <cx-tabs>
+                            <cx-tab type="editor">
+                                HTML Editor One
+                            </cx-tab>
+                            <cx-tab type="editor">
+                                HTML Editor
+                            </cx-tab>
+                        </cx-tabs>
+                    </cx-column>
+        
+                    <cx-column>
+                        <cx-header>
+                            <cx-nav>
+                                <cx-button selected>Tab One</cx-button>
+                                <cx-button>Tab Two</cx-button>
+                            </cx-nav>
+                            <cx-menu>
+                                <cx-menu-group>
+                                    <cx-button>Validate Doc</cx-button>
+                                    <cx-button>Go to line</cx-button>
+                                    <cx-button>Wrap lines</cx-button>
+                                </cx-menu-group>
+                                <cx-menu-group>
+                                    <cx-button>Split view</cx-button>
+                                    <cx-button>Close view</cx-button>
+                                </cx-menu-group>
+                            </cx-menu>
+                        </cx-header>
+                        <cx-tabs>
+                            <cx-tab type="editor">
+                                HTML Editor
+                            </cx-tab>
+                            <cx-tab type="editor">
+                                HTML Editor
+                            </cx-tab>
+                        </cx-tabs>
+                    </cx-column>
+                </cx-row>
+            </cx-column>
+
+            <cx-column>
+                <cx-row>
+                    <cx-column>
+                        <cx-header>
+                            <cx-nav>
+                                <cx-button selected>Tab One</cx-button>
+                                <cx-button>Tab Two</cx-button>
+                            </cx-nav>
+                            <cx-menu>
+                                <cx-menu-group>
+                                    <cx-button>Validate Doc</cx-button>
+                                    <cx-button>Go to line</cx-button>
+                                    <cx-button>Wrap lines</cx-button>
+                                </cx-menu-group>
+                                <cx-menu-group>
+                                    <cx-button>Split view</cx-button>
+                                    <cx-button>Close view</cx-button>
+                                </cx-menu-group>
+                            </cx-menu>
+                        </cx-header>
+                        <cx-tabs>
+                            <cx-tab type="editor">
+                                HTML Editor
+                            </cx-tab>
+                            <cx-tab type="editor">
+                                HTML Editor
+                            </cx-tab>
+                        </cx-tabs>
+                    </cx-column>
+                </cx-row>
+                <cx-row>
+                    <cx-column>
+                        <cx-header>
+                            <cx-nav>
+                                <cx-button selected>Tab One</cx-button>
+                                <cx-button>Tab Two</cx-button>
+                            </cx-nav>
+                            <cx-menu>
+                                <cx-menu-group>
+                                    <cx-button>Validate Doc</cx-button>
+                                    <cx-button>Go to line</cx-button>
+                                    <cx-button>Wrap lines</cx-button>
+                                </cx-menu-group>
+                                <cx-menu-group>
+                                    <cx-button>Split view</cx-button>
+                                    <cx-button>Close view</cx-button>
+                                </cx-menu-group>
+                            </cx-menu>
+                        </cx-header>
+                        <cx-tabs>
+                            <cx-tab type="editor">
+                                HTML Editor
+                            </cx-tab>
+                            <cx-tab type="editor">
+                                HTML Editor
+                            </cx-tab>
+                        </cx-tabs>
+                    </cx-column>
+                </cx-row>
+            </cx-column>
+        </cx-row>
+
+
+        <cx-row>
+            <cx-column>
+                <cx-header>
+                    <cx-nav>
+                        <cx-button selected>Tab One</cx-button>
+                        <cx-button>Tab Two</cx-button>
+                    </cx-nav>
+                    <cx-menu>
+                        <cx-menu-group>
+                            <cx-button>Validate Doc</cx-button>
+                            <cx-button>Go to line</cx-button>
+                            <cx-button>Wrap lines</cx-button>
+                        </cx-menu-group>
+                        <cx-menu-group>
+                            <cx-button>Split view</cx-button>
+                            <cx-button>Close view</cx-button>
+                        </cx-menu-group>
+                    </cx-menu>
+                </cx-header>
+                <cx-tabs>
+                    <cx-tab type="preview">
+                        Preview HERE
+                    </cx-tab>
+                    <cx-tab type="editor">
+                        HTML Editor
+                    </cx-tab>
+                </cx-tabs>
+            </cx-column>
+        </cx-row>
+        
+    </cx-app>
+
+   
+
+</body>
+</html>
